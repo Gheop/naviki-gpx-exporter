@@ -13,6 +13,12 @@ env:
   IMAGE_NAME: naviki-gpx-exporter
   REGISTRY: ghcr.io
 
+# Permissions nécessaires pour uploader vers GitHub Security
+permissions:
+  contents: read
+  packages: write
+  security-events: write  # Ajout pour l'upload SARIF
+
 jobs:
   build-and-test:
     name: Build & Test Docker Image
@@ -132,7 +138,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: github.event_name != 'pull_request'
         with:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
