@@ -7,6 +7,10 @@
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
+[![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions)
+[![codecov](https://codecov.io/gh/Gheop/naviki-gpx-exporter/branch/main/graph/badge.svg)](https://codecov.io/gh/Gheop/naviki-gpx-exporter)
+[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## 📋 Table of Contents
 
@@ -285,7 +289,7 @@ Contributions are welcome! Here's how you can help:
 
 ### Reporting Bugs
 
-1. Check if the issue already exists in [Issues](https://github.com/yourusername/naviki-gpx-exporter/issues)
+1. Check if the issue already exists in [Issues](https://github.com/Gheop/naviki-gpx-exporter/issues)
 2. Create a new issue with:
    - Description of the problem
    - Steps to reproduce
@@ -340,8 +344,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-- Create an [issue](https://github.com/yourusername/naviki-gpx-exporter/issues) for bugs or features
-- For questions, use [Discussions](https://github.com/yourusername/naviki-gpx-exporter/discussions)
+- Create an [issue](https://github.com/Gheop/naviki-gpx-exporter/issues) for bugs or features
+- For questions, use [Discussions](https://github.com/Gheop/naviki-gpx-exporter/discussions)
 
 ---
 
