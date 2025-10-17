@@ -347,5 +347,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **🌟 If this tool helped you, consider giving it a star!**
 
-[![Naviki](https://img.shields.io/badge/Naviki-supported-FF6600?style=flat&logo=https://github.com/Gheop/naviki-gpx-exporter/blob/main/naviki16px.png)](https://www.naviki.org)
+[![Naviki](https://img.shields.io/badge/Naviki-supported-FF6600?style=flat&logo=https://github.com/Gheop/naviki-gpx-exporter/blob/main/naviki16px.svg)](https://www.naviki.org)
 
