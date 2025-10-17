@@ -50,6 +50,8 @@ jobs:
           tags: ${{ env.IMAGE_NAME }}:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Build seulement pour AMD64 lors des tests
+          platforms: linux/amd64
 
       - name: Test Docker image
         run: |

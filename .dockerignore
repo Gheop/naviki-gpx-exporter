@@ -49,9 +49,18 @@ requirements-dev.txt
 .pre-commit-config.yaml
 .flake8
 
-# Documentation (à garder si besoin)
-# README.md
-LICENSE
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Scripts
+*.sh
+Makefile
+
+# Documentation (gardée pour le Dockerfile mais pas pour le build context)
+# README.md - On le garde au cas où
+DOCKER_QUICKSTART.md
 
 # Logs
 *.log

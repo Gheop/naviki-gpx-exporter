@@ -9,20 +9,24 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Installation des dépendances système pour Firefox et Selenium
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    # Firefox et geckodriver
     firefox-esr \
-    # Dépendances pour Selenium et Firefox headless
     wget \
     ca-certificates \
-    # Nettoyage
     && rm -rf /var/lib/apt/lists/*
 
-# Installation de geckodriver (version compatible avec Firefox ESR)
-RUN GECKODRIVER_VERSION=$(wget -qO- "https://api.github.com/repos/mozilla/geckodriver/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")') && \
-    wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz" && \
-    tar -xzf geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz -C /usr/local/bin && \
+# Installation de geckodriver (version fixe pour éviter les problèmes d'API)
+RUN GECKODRIVER_VERSION="v0.35.0" && \
+    ARCH=$(dpkg --print-architecture) && \
+    case "$ARCH" in \
+        amd64) GECKODRIVER_ARCH="linux64" ;; \
+        arm64) GECKODRIVER_ARCH="linux-aarch64" ;; \
+        *) GECKODRIVER_ARCH="linux64" ;; \
+    esac && \
+    wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-${GECKODRIVER_ARCH}.tar.gz" -O /tmp/geckodriver.tar.gz && \
+    tar -xzf /tmp/geckodriver.tar.gz -C /usr/local/bin && \
     chmod +x /usr/local/bin/geckodriver && \
-    rm geckodriver-${GECKODRIVER_VERSION}-linux64.tar.gz
+    rm /tmp/geckodriver.tar.gz && \
+    geckodriver --version
 
 # Création du répertoire de travail
 WORKDIR /app
