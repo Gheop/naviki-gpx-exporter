@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  naviki-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: naviki-gpx-exporter:latest
+    container_name: naviki-exporter
+    
+    # Variables d'environnement (optionnel, peut être passé en ligne de commande)
+    environment:
+      - NAVIKI_USERNAME=${NAVIKI_USERNAME}
+      - NAVIKI_PASSWORD=${NAVIKI_PASSWORD}
+    
+    # Montage du volume pour les exports
+    volumes:
+      - ./output:/output
+    
+    # Commande par défaut (à surcharger au lancement)
+    # Exemple: docker-compose run naviki-exporter --username user --password pass --output /output
+    command: ["--help"]
+    
+    # Pas de restart automatique pour un script one-shot
+    restart: "no"
+    
+    # Limites de ressources (optionnel)
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
