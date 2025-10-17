@@ -1,7 +1,7 @@
 # 🚴 naviki-gpx-exporter
 
 > Automated GPX export tool for Naviki routes. One command to backup all your cycling data. Features OAuth2 auto-login, batch download, and incremental sync. Your rides, your files.
-[![Naviki](https://www.naviki.org/typo3conf/ext/naviki/Resources/Public/Img/Logo/naviki-appstore-logo.png)](https://www.naviki.org)
+[![Naviki](https://img.shields.io/badge/Naviki-supported-FF6600?style=flat)](https://www.naviki.org)
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
