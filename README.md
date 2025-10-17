@@ -11,6 +11,7 @@
 
 [![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions)
 [![Docker Build](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml)
+[![Security Scan](https://img.shields.io/badge/security-trivy-blue.svg?logo=aqua)](https://github.com/Gheop/naviki-gpx-exporter/security)
 [![codecov](https://codecov.io/gh/Gheop/naviki-gpx-exporter/branch/main/graph/badge.svg)](https://codecov.io/gh/Gheop/naviki-gpx-exporter)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -180,22 +181,26 @@ python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' 
 
 ```bash
 # Linux/macOS
-docker run --rm -v $(pwd)/output:/output \
+docker run --rm \
+  --user $(id -u):$(id -g) \
+  -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username YourUsername --password 'YourPassword' --output /output
 
-# Windows (PowerShell)
+# Windows (PowerShell) - Note: --user option not needed on Windows
 docker run --rm -v ${PWD}/output:/output `
   ghcr.io/gheop/naviki-gpx-exporter:latest `
   --username YourUsername --password "YourPassword" --output /output
 
-# Windows (CMD)
+# Windows (CMD) - Note: --user option not needed on Windows
 docker run --rm -v %cd%/output:/output ^
   ghcr.io/gheop/naviki-gpx-exporter:latest ^
   --username YourUsername --password "YourPassword" --output /output
 ```
 
 Your GPX files will be in the `output/` folder! 🎉
+
+**Note:** The `--user $(id -u):$(id -g)` option ensures files are created with your user permissions on Linux/macOS.
 
 #### Using the Helper Script (Easiest)
 
@@ -290,6 +295,7 @@ python naviki-gpx-exporter.py --token abc123-def456-ghi789 --output ~/backup2
 #### Example 1: Basic export with Docker
 ```bash
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username MyUsername \
@@ -300,6 +306,7 @@ docker run --rm \
 #### Example 2: Using OAuth token
 ```bash
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --token abc123-def456-ghi789 \
@@ -309,6 +316,7 @@ docker run --rm \
 #### Example 3: Specific route types only
 ```bash
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username MyUsername \
@@ -321,13 +329,14 @@ docker run --rm \
 ```bash
 # Linux/macOS
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v ~/naviki-backup:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username MyUsername \
   --password 'MyPassword!' \
   --output /output
 
-# Windows
+# Windows (no --user needed)
 docker run --rm \
   -v C:\Users\YourName\naviki-backup:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
@@ -347,13 +356,14 @@ docker run --rm \
 **Docker:**
 ```bash
 # Add to crontab (crontab -e)
-0 2 * * * docker run --rm -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --token YOUR_TOKEN --output /output >> /var/log/naviki.log 2>&1
+0 2 * * * docker run --rm --user $(id -u):$(id -g) -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --token YOUR_TOKEN --output /output >> /var/log/naviki.log 2>&1
 ```
 
 #### Example 6: Automated backup on Synology NAS
 ```bash
 # Via Task Scheduler in DSM
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v /volume1/backups/naviki:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --token YOUR_TOKEN \
@@ -366,6 +376,7 @@ docker run --rm \
 docker pull ghcr.io/gheop/naviki-gpx-exporter:latest
 
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v /home/pi/naviki-backup:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username MyUsername \
@@ -457,19 +468,23 @@ docker ps
 
 #### Issue: Permission denied on exported files
 
-**Solution 1: Change owner after export**
-```bash
-sudo chown -R $USER:$USER output/
-```
+This issue occurs when Docker creates files as root. The solution is already included in all examples above using `--user $(id -u):$(id -g)`.
 
-**Solution 2: Run with your user ID**
+**If you still have permission issues:**
+
 ```bash
+# Solution 1: Change owner after export (if needed)
+sudo chown -R $USER:$USER output/
+
+# Solution 2: Ensure you're using the --user flag
 docker run --rm \
   --user $(id -u):$(id -g) \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username YourUsername --password 'YourPassword' --output /output
 ```
+
+**On Windows:** The `--user` flag is not needed and should be omitted.
 
 #### Issue: Image not found or outdated
 
@@ -518,6 +533,7 @@ docker volume create naviki-backup
 
 # Use the volume
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -v naviki-backup:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
   --username MyUsername \
@@ -532,6 +548,7 @@ docker run --rm -v naviki-backup:/output alpine ls -lah /output
 
 ```bash
 docker run --rm \
+  --user $(id -u):$(id -g) \
   --memory="512m" \
   --cpus="1.0" \
   -v $(pwd)/output:/output \
@@ -545,6 +562,7 @@ docker run --rm \
 
 ```bash
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -e TZ=Europe/Paris \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
@@ -562,6 +580,7 @@ export NAVIKI_PASSWORD="MyPassword"
 
 # Run without exposing credentials
 docker run --rm \
+  --user $(id -u):$(id -g) \
   -e NAVIKI_USERNAME \
   -e NAVIKI_PASSWORD \
   -v $(pwd)/output:/output \
@@ -684,7 +703,38 @@ pytest tests/test_integration.py -v
 
 # All tests with make
 make test
+
+# Security scan
+./security-scan-local.sh
+# or
+make security-scan
 ```
+
+## 🔒 Security
+
+This project takes security seriously. Docker images are automatically scanned for vulnerabilities using [Trivy](https://github.com/aquasecurity/trivy).
+
+### Scanning Locally
+
+```bash
+# Make the script executable
+chmod +x security-scan-local.sh
+
+# Run security scan
+./security-scan-local.sh
+
+# Or with make
+make security-scan
+```
+
+### Viewing Security Reports
+
+Security scan results are automatically uploaded to GitHub Security tab after each build. You can view them at:
+`https://github.com/Gheop/naviki-gpx-exporter/security`
+
+### Reporting Security Issues
+
+If you discover a security vulnerability, please email [votre@email.com](mailto:votre@email.com) instead of using the issue tracker.
 
 ## 📄 License
 
