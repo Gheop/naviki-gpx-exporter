@@ -42,7 +42,7 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/naviki-gpx-exporter.git
+git clone https://github.com/Gheop/naviki-gpx-exporter.git
 cd naviki-gpx-exporter
 ```
 
