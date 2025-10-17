@@ -7,9 +7,9 @@
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
+
 [![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions)
 [![codecov](https://codecov.io/gh/Gheop/naviki-gpx-exporter/branch/main/graph/badge.svg)](https://codecov.io/gh/Gheop/naviki-gpx-exporter)
-[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## 📋 Table of Contents
