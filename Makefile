@@ -18,25 +18,31 @@ run: ## Lance l'export (utilise les variables d'environnement .env)
 		exit 1; \
 	fi
 	@echo "🚀 Lancement de l'export Naviki..."
+	@mkdir -p $(OUTPUT_DIR)
 	docker run --rm \
+		--user $(id -u):$(id -g) \
 		--env-file .env \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
-		--username "$${NAVIKI_USERNAME}" \
-		--password "$${NAVIKI_PASSWORD}" \
+		--username "${NAVIKI_USERNAME}" \
+		--password "${NAVIKI_PASSWORD}" \
 		--output /output \
 		--headless
 
 run-token: ## Lance l'export avec un token OAuth
 	@read -p "Token OAuth: " token; \
+	mkdir -p $(OUTPUT_DIR); \
 	docker run --rm \
+		--user $(id -u):$(id -g) \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
-		--token "$$token" \
+		--token "$token" \
 		--output /output
 
 run-custom: ## Lance avec des arguments personnalisés (ex: make run-custom ARGS="--help")
+	@mkdir -p $(OUTPUT_DIR)
 	docker run --rm \
+		--user $(id -u):$(id -g) \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
 		$(ARGS)
@@ -54,6 +60,14 @@ test: ## Lance les tests dans Docker
 		--entrypoint /bin/bash \
 		$(IMAGE_NAME):latest \
 		-c "pip install -r requirements-dev.txt && pytest tests/ -v"
+
+security-scan: ## Scan de sécurité avec Trivy
+	@if command -v trivy &> /dev/null; then \
+		./security-scan-local.sh $(IMAGE_NAME):latest; \
+	else \
+		echo "⚠️  Trivy non installé, utilisation de Docker"; \
+		docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy image $(IMAGE_NAME):latest; \
+	fi
 
 clean: ## Nettoie les images Docker
 	docker rmi $(IMAGE_NAME):latest $(IMAGE_NAME):$(VERSION) 2>/dev/null || true

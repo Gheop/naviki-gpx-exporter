@@ -1,0 +1,7 @@
+# Trivy ignore file
+# Liste des CVE à ignorer (avec justification)
+
+# Exemple: CVE dans des dépendances de dev qui ne sont pas dans l'image finale
+# CVE-2024-XXXXX
+
+# Note: Ne pas ignorer les vulnérabilités CRITICAL sans justification solide
