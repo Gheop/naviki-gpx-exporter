@@ -149,7 +149,7 @@ class TestCommandLine:
         """Test que --help fonctionne"""
         import subprocess
         result = subprocess.run(
-            ['python', 'naviki_gpx_download.py', '--help'],
+            ['python', 'naviki-gpx-exporter.py', '--help'],
             capture_output=True,
             text=True
         )
@@ -163,7 +163,7 @@ class TestCommandLine:
         """Test que --password est requis avec --username"""
         import subprocess
         result = subprocess.run(
-            ['python', 'naviki_gpx_download.py', '--username', 'test'],
+            ['python', 'naviki-gpx-exporter.py', '--username', 'test'],
             capture_output=True,
             text=True
         )

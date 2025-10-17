@@ -37,7 +37,7 @@ jobs:
     
     - name: Analyze with pylint
       run: |
-        pylint naviki_gpx_download.py --disable=C0111,R0913 || true
+        pylint naviki-gpx-exporter.py --disable=C0111,R0913 || true
 
   test:
     name: Unit Tests
@@ -132,11 +132,11 @@ jobs:
     
     - name: Test help command
       run: |
-        python naviki_gpx_download.py --help
+        python naviki-gpx-exporter.py --help
     
     - name: Test with invalid token (should fail gracefully)
       run: |
-        python naviki_gpx_download.py --token invalid-token-test --output /tmp || echo "Expected failure"
+        python naviki-gpx-exporter.py --token invalid-token-test --output /tmp || echo "Expected failure"
 
   build-badge:
     name: Update Badge

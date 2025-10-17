@@ -92,7 +92,7 @@ geckodriver --version
 ### Basic Usage (Automated Authentication)
 
 ```bash
-python naviki_gpx_download.py --username YourUsername --password 'YourPassword'
+python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
 
 **Output:**
@@ -147,26 +147,26 @@ Téléchargement terminé!
 If you already have an OAuth token:
 
 ```bash
-python naviki_gpx_download.py --token YOUR-OAUTH-TOKEN-HERE
+python naviki-gpx-exporter.py --token YOUR-OAUTH-TOKEN-HERE
 ```
 
 ### Custom Output Directory
 
 ```bash
-python naviki_gpx_download.py --username YourUsername --password 'YourPassword' --output ~/cycling/naviki-backup
+python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' --output ~/cycling/naviki-backup
 ```
 
 ### Visible Browser Mode (for debugging)
 
 ```bash
-python naviki_gpx_download.py --username YourUsername --password 'YourPassword' --visible
+python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' --visible
 ```
 
 ## 📚 Examples
 
 ### Example 1: First-time backup
 ```bash
-python naviki_gpx_download.py \
+python naviki-gpx-exporter.py \
   --username MyUsername \
   --password 'MySecurePass123!' \
   --output ~/naviki-backup
@@ -174,7 +174,7 @@ python naviki_gpx_download.py \
 
 ### Example 2: Daily sync (incremental)
 ```bash
-python naviki_gpx_download.py \
+python naviki-gpx-exporter.py \
   --username MyUsername \
   --password 'MySecurePass123!' \
   --output ~/naviki-backup \
@@ -183,7 +183,7 @@ python naviki_gpx_download.py \
 
 ### Example 3: Only recorded routes
 ```bash
-python naviki_gpx_download.py \
+python naviki-gpx-exporter.py \
   --username MyUsername \
   --password 'MySecurePass123!' \
   --types recordedMy \
@@ -193,17 +193,17 @@ python naviki_gpx_download.py \
 ### Example 4: Using stored token
 ```bash
 # Get your token once (lasts for session)
-python naviki_gpx_download.py --username MyUsername --password 'pass' --output /tmp
+python naviki-gpx-exporter.py --username MyUsername --password 'pass' --output /tmp
 
 # Reuse token for multiple runs
-python naviki_gpx_download.py --token abc123-def456-ghi789 --output ~/backup1
-python naviki_gpx_download.py --token abc123-def456-ghi789 --output ~/backup2
+python naviki-gpx-exporter.py --token abc123-def456-ghi789 --output ~/backup1
+python naviki-gpx-exporter.py --token abc123-def456-ghi789 --output ~/backup2
 ```
 
 ### Example 5: Automated daily backup (cron job)
 ```bash
 # Add to crontab (crontab -e)
-0 2 * * * /usr/bin/python3 /path/to/naviki_gpx_download.py --username USER --password 'PASS' --output ~/naviki-backup >> ~/naviki.log 2>&1
+0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --username USER --password 'PASS' --output ~/naviki-backup >> ~/naviki.log 2>&1
 ```
 
 ## ⚙️ Command-Line Options
@@ -248,14 +248,14 @@ sudo mv geckodriver /usr/local/bin/
 
 **Solution:** Tokens expire after some time. Re-authenticate:
 ```bash
-python naviki_gpx_download.py --username YourUsername --password 'YourPassword'
+python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
 
 ### Issue: Authentication fails silently
 
 **Solution:** Run in visible mode to see what's happening:
 ```bash
-python naviki_gpx_download.py --username YourUsername --password 'YourPassword' --visible
+python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' --visible
 ```
 
 Check the screenshot saved at `/tmp/naviki_debug.png` for visual debugging.
@@ -265,10 +265,10 @@ Check the screenshot saved at `/tmp/naviki_debug.png` for visual debugging.
 **Solution:** Always quote your password:
 ```bash
 # Correct
-python naviki_gpx_download.py --username user --password 'P@ss!w0rd#123'
+python naviki-gpx-exporter.py --username user --password 'P@ss!w0rd#123'
 
 # Wrong (shell will interpret special chars)
-python naviki_gpx_download.py --username user --password P@ss!w0rd#123
+python naviki-gpx-exporter.py --username user --password P@ss!w0rd#123
 ```
 
 ### Issue: Downloads are slow
@@ -325,7 +325,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run tests
-python naviki_gpx_download.py --help
+python naviki-gpx-exporter.py --help
 ```
 
 ## 📄 License
