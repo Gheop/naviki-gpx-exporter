@@ -7,8 +7,10 @@
 [![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
+[![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://hub.docker.com)
 
 [![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions)
+[![Docker Build](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml)
 [![codecov](https://codecov.io/gh/Gheop/naviki-gpx-exporter/branch/main/graph/badge.svg)](https://codecov.io/gh/Gheop/naviki-gpx-exporter)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
@@ -17,7 +19,11 @@
 - [Features](#-features)
 - [Prerequisites](#-prerequisites)
 - [Installation](#-installation)
+  - [Standard Installation (Python)](#standard-installation-python)
+  - [Docker Installation (Recommended)](#docker-installation-recommended)
 - [Usage](#-usage)
+  - [Standard Usage](#standard-usage)
+  - [Docker Usage](#docker-usage)
 - [Examples](#-examples)
 - [Command-Line Options](#-command-line-options)
 - [Troubleshooting](#-troubleshooting)
@@ -35,24 +41,33 @@
 - 💾 **Standard GPX format** - compatible with Strava, Komoot, Garmin, etc.
 - 🌐 **Headless mode** - run in background without UI
 - 📸 **Debug screenshots** - automatic error diagnosis
+- 🐳 **Docker ready** - zero dependency hassle, works everywhere
 
 ## 🔧 Prerequisites
 
+### Standard Installation
 - **Python 3.7+**
 - **Firefox browser** (for Selenium)
 - **geckodriver** (Firefox WebDriver)
 - A Naviki account with recorded routes
 
+### Docker Installation (Recommended)
+- **Docker** (that's it!)
+
 ## 📥 Installation
 
-### 1. Clone the repository
+Choose your preferred installation method:
+
+### Standard Installation (Python)
+
+#### 1. Clone the repository
 
 ```bash
 git clone https://github.com/Gheop/naviki-gpx-exporter.git
 cd naviki-gpx-exporter
 ```
 
-### 2. Install Python dependencies
+#### 2. Install Python dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -64,7 +79,7 @@ Or install manually:
 pip install selenium requests beautifulsoup4
 ```
 
-### 3. Install geckodriver (Firefox WebDriver)
+#### 3. Install geckodriver (Firefox WebDriver)
 
 **Ubuntu/Debian:**
 ```bash
@@ -91,84 +106,150 @@ brew install geckodriver
 geckodriver --version
 ```
 
+### Docker Installation (Recommended)
+
+#### Option 1: Use pre-built image (easiest)
+
+```bash
+# Pull the latest image from GitHub Container Registry
+docker pull ghcr.io/gheop/naviki-gpx-exporter:latest
+
+# You're ready to go! See Docker Usage below.
+```
+
+#### Option 2: Build locally
+
+```bash
+# Clone the repository
+git clone https://github.com/Gheop/naviki-gpx-exporter.git
+cd naviki-gpx-exporter
+
+# Build the Docker image
+docker build -t naviki-gpx-exporter:latest .
+
+# Or use make (simpler)
+make build
+```
+
+#### Option 3: Using docker-compose
+
+```bash
+# Clone and setup
+git clone https://github.com/Gheop/naviki-gpx-exporter.git
+cd naviki-gpx-exporter
+
+# Copy and edit configuration
+cp .env.example .env
+nano .env  # Add your credentials
+
+# Build
+docker-compose build
+```
+
 ## 🚀 Usage
 
-### Basic Usage (Automated Authentication)
+### Standard Usage
+
+#### Basic Usage (Automated Authentication)
 
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
 
-**Output:**
-```
-🤖 Lancement de l'authentification automatique avec Selenium...
-   Username: YourUsername
-   Mode: Headless (invisible)
-
-🌐 Ouverture du navigateur Firefox...
-
-📋 Étape 1: Chargement de la page de connexion OAuth2...
-   ✓ Page chargée
-
-🔑 Étape 2: Saisie des identifiants...
-   ✓ Identifiants saisis
-
-🚀 Étape 3: Soumission du formulaire...
-
-⏳ Étape 4: Attente du token dans localStorage...
-   ✓ Token récupéré: 79bb6f8e-23b6-38c4-b...
-
-✅ Authentification réussie!
-
-🔒 Fermeture du navigateur...
-
-==================================================
-📁 Destination: /tmp
-🔍 Types de routes: routedAll,recordedMy,recordedOthers
-==================================================
-
-Début du téléchargement...
-
-Traitement: 16/10/2025, 07:20
-UUID: 8252D5EB-42FD-4022-A545-244F305D03DE
-✅ Sauvegardé: /tmp/2025-10-16_07-20_Naviki.gpx
-
-Traitement: 15/10/2025, 08:15
-UUID: 9363E6FC-53GE-5133-B656-355F416E04EF
-✅ Sauvegardé: /tmp/2025-10-15_08-15_Naviki.gpx
-
-==================================================
-Téléchargement terminé!
-✅ Téléchargés: 45
-⏭️  Ignorés (déjà présents): 12
-❌ Erreurs: 0
-📊 Total traité: 57
-📁 Fichiers sauvegardés dans: /tmp
-```
-
-### Using a Pre-existing Token
-
-If you already have an OAuth token:
+#### Using a Pre-existing Token
 
 ```bash
 python naviki-gpx-exporter.py --token YOUR-OAUTH-TOKEN-HERE
 ```
 
-### Custom Output Directory
+#### Custom Output Directory
 
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' --output ~/cycling/naviki-backup
 ```
 
-### Visible Browser Mode (for debugging)
+#### Visible Browser Mode (for debugging)
 
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' --visible
 ```
 
+### Docker Usage
+
+#### Quick Start (One Command)
+
+```bash
+# Linux/macOS
+docker run --rm -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username YourUsername --password 'YourPassword' --output /output
+
+# Windows (PowerShell)
+docker run --rm -v ${PWD}/output:/output `
+  ghcr.io/gheop/naviki-gpx-exporter:latest `
+  --username YourUsername --password "YourPassword" --output /output
+
+# Windows (CMD)
+docker run --rm -v %cd%/output:/output ^
+  ghcr.io/gheop/naviki-gpx-exporter:latest ^
+  --username YourUsername --password "YourPassword" --output /output
+```
+
+Your GPX files will be in the `output/` folder! 🎉
+
+#### Using the Helper Script (Easiest)
+
+```bash
+# Make script executable
+chmod +x docker-run.sh
+
+# Run with username/password
+./docker-run.sh -u YourUsername -p 'YourPassword'
+
+# Run with OAuth token
+./docker-run.sh -t your-oauth-token
+
+# Custom output directory
+./docker-run.sh -u YourUsername -p 'YourPassword' -o ~/backup
+```
+
+#### Using Makefile (Simplest)
+
+```bash
+# Setup once
+cp .env.example .env
+nano .env  # Add your credentials
+
+# Build and run
+make build  # First time only
+make run    # Every time you want to export
+
+# Other useful commands
+make run-token    # Use with OAuth token
+make shell        # Open shell in container
+make test         # Run tests in Docker
+make clean        # Clean up images
+```
+
+#### Using docker-compose
+
+```bash
+# Setup once
+cp .env.example .env
+nano .env  # Add your credentials
+
+# Run
+docker-compose run --rm naviki-exporter \
+  --username "$NAVIKI_USERNAME" \
+  --password "$NAVIKI_PASSWORD" \
+  --output /output
+```
+
 ## 📚 Examples
 
-### Example 1: First-time backup
+### Standard Python Examples
+
+#### Example 1: First-time backup
 ```bash
 python naviki-gpx-exporter.py \
   --username MyUsername \
@@ -176,7 +257,7 @@ python naviki-gpx-exporter.py \
   --output ~/naviki-backup
 ```
 
-### Example 2: Daily sync (incremental)
+#### Example 2: Daily sync (incremental)
 ```bash
 python naviki-gpx-exporter.py \
   --username MyUsername \
@@ -185,7 +266,7 @@ python naviki-gpx-exporter.py \
   --headless
 ```
 
-### Example 3: Only recorded routes
+#### Example 3: Only recorded routes
 ```bash
 python naviki-gpx-exporter.py \
   --username MyUsername \
@@ -194,7 +275,7 @@ python naviki-gpx-exporter.py \
   --output ~/recorded-only
 ```
 
-### Example 4: Using stored token
+#### Example 4: Using stored token
 ```bash
 # Get your token once (lasts for session)
 python naviki-gpx-exporter.py --username MyUsername --password 'pass' --output /tmp
@@ -204,10 +285,92 @@ python naviki-gpx-exporter.py --token abc123-def456-ghi789 --output ~/backup1
 python naviki-gpx-exporter.py --token abc123-def456-ghi789 --output ~/backup2
 ```
 
-### Example 5: Automated daily backup (cron job)
+### Docker Examples
+
+#### Example 1: Basic export with Docker
+```bash
+docker run --rm \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
+```
+
+#### Example 2: Using OAuth token
+```bash
+docker run --rm \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --token abc123-def456-ghi789 \
+  --output /output
+```
+
+#### Example 3: Specific route types only
+```bash
+docker run --rm \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --types recordedMy \
+  --output /output
+```
+
+#### Example 4: Custom output location
+```bash
+# Linux/macOS
+docker run --rm \
+  -v ~/naviki-backup:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
+
+# Windows
+docker run --rm \
+  -v C:\Users\YourName\naviki-backup:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password "MyPassword!" \
+  --output /output
+```
+
+#### Example 5: Automated daily backup (cron)
+
+**Standard Python:**
 ```bash
 # Add to crontab (crontab -e)
 0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --username USER --password 'PASS' --output ~/naviki-backup >> ~/naviki.log 2>&1
+```
+
+**Docker:**
+```bash
+# Add to crontab (crontab -e)
+0 2 * * * docker run --rm -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --token YOUR_TOKEN --output /output >> /var/log/naviki.log 2>&1
+```
+
+#### Example 6: Automated backup on Synology NAS
+```bash
+# Via Task Scheduler in DSM
+docker run --rm \
+  -v /volume1/backups/naviki:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --token YOUR_TOKEN \
+  --output /output
+```
+
+#### Example 7: Using with Raspberry Pi
+```bash
+# ARM64 supported automatically
+docker pull ghcr.io/gheop/naviki-gpx-exporter:latest
+
+docker run --rm \
+  -v /home/pi/naviki-backup:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
 ```
 
 ## ⚙️ Command-Line Options
@@ -235,7 +398,9 @@ Default: `routedAll,recordedMy,recordedOthers` (all types)
 
 ## 🐛 Troubleshooting
 
-### Issue: "geckodriver not found"
+### Standard Python Issues
+
+#### Issue: "geckodriver not found"
 
 **Solution:**
 ```bash
@@ -248,14 +413,14 @@ tar -xvzf geckodriver-v0.33.0-linux64.tar.gz
 sudo mv geckodriver /usr/local/bin/
 ```
 
-### Issue: "Token invalide ou expiré"
+#### Issue: "Token invalide ou expiré"
 
 **Solution:** Tokens expire after some time. Re-authenticate:
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
 
-### Issue: Authentication fails silently
+#### Issue: Authentication fails silently
 
 **Solution:** Run in visible mode to see what's happening:
 ```bash
@@ -264,7 +429,7 @@ python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword' 
 
 Check the screenshot saved at `/tmp/naviki_debug.png` for visual debugging.
 
-### Issue: Special characters in password
+#### Issue: Special characters in password
 
 **Solution:** Always quote your password:
 ```bash
@@ -275,13 +440,167 @@ python naviki-gpx-exporter.py --username user --password 'P@ss!w0rd#123'
 python naviki-gpx-exporter.py --username user --password P@ss!w0rd#123
 ```
 
-### Issue: Downloads are slow
+### Docker Issues
+
+#### Issue: "Cannot connect to Docker daemon"
+
+**Solution:**
+```bash
+# Verify Docker is running
+docker --version
+docker ps
+
+# Start Docker
+# Linux: sudo systemctl start docker
+# macOS/Windows: Start Docker Desktop
+```
+
+#### Issue: Permission denied on exported files
+
+**Solution 1: Change owner after export**
+```bash
+sudo chown -R $USER:$USER output/
+```
+
+**Solution 2: Run with your user ID**
+```bash
+docker run --rm \
+  --user $(id -u):$(id -g) \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username YourUsername --password 'YourPassword' --output /output
+```
+
+#### Issue: Image not found or outdated
+
+**Solution:**
+```bash
+# Pull latest version
+docker pull ghcr.io/gheop/naviki-gpx-exporter:latest
+
+# Or with helper script
+./docker-run.sh --pull -u YourUsername -p 'YourPassword'
+
+# Or rebuild locally
+make build
+```
+
+#### Issue: Container exits immediately
+
+**Solution:**
+```bash
+# Check logs
+docker logs $(docker ps -lq)
+
+# Test the image
+docker run --rm --entrypoint /bin/bash \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  -c "geckodriver --version && firefox-esr --version"
+```
+
+### General Issues
+
+#### Issue: Downloads are slow
 
 **Solution:** This is normal - each GPX file requires an API call. For 100 routes, expect 2-5 minutes.
 
-### Issue: Some routes have generic names like "2024-11-24_06-18_UTC_Naviki.gpx"
+#### Issue: Some routes have generic names like "2024-11-24_06-18_UTC_Naviki.gpx"
 
 **Explanation:** Routes without a date in the title use the creation timestamp (UTC timezone). This is expected behavior.
+
+## 🐳 Advanced Docker Usage
+
+### Using Named Volumes
+
+```bash
+# Create a volume
+docker volume create naviki-backup
+
+# Use the volume
+docker run --rm \
+  -v naviki-backup:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
+
+# View files in volume
+docker run --rm -v naviki-backup:/output alpine ls -lah /output
+```
+
+### Resource Limits
+
+```bash
+docker run --rm \
+  --memory="512m" \
+  --cpus="1.0" \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
+```
+
+### Custom Timezone
+
+```bash
+docker run --rm \
+  -e TZ=Europe/Paris \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username MyUsername \
+  --password 'MyPassword!' \
+  --output /output
+```
+
+### Using Environment Variables
+
+```bash
+# Set environment variables
+export NAVIKI_USERNAME="MyUsername"
+export NAVIKI_PASSWORD="MyPassword"
+
+# Run without exposing credentials
+docker run --rm \
+  -e NAVIKI_USERNAME \
+  -e NAVIKI_PASSWORD \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username "$NAVIKI_USERNAME" \
+  --password "$NAVIKI_PASSWORD" \
+  --output /output
+```
+
+### Integration with CI/CD
+
+```yaml
+# Example GitHub Actions workflow
+name: Backup Naviki Routes
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Backup routes
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}/naviki-backup:/output \
+            ghcr.io/gheop/naviki-gpx-exporter:latest \
+            --token ${{ secrets.NAVIKI_TOKEN }} \
+            --output /output
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: naviki-routes
+          path: naviki-backup/*.gpx
+          retention-days: 90
+```
 
 ## 🤝 Contributing
 
@@ -309,16 +628,18 @@ Open an issue with the `enhancement` label and describe:
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/amazing-feature`
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly (including Docker if applicable)
 5. Commit: `git commit -m 'Add amazing feature'`
 6. Push: `git push origin feature/amazing-feature`
 7. Open a Pull Request
 
 ### Development Setup
 
+#### Standard Python Setup
+
 ```bash
 # Clone your fork
-git clone https://github.com/Gheop/naviki-gpx-exporter.git
+git clone https://github.com/yourusername/naviki-gpx-exporter.git
 cd naviki-gpx-exporter
 
 # Create virtual environment
@@ -327,9 +648,42 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 
 # Run tests
-python naviki-gpx-exporter.py --help
+pytest tests/ -v
+```
+
+#### Docker Development
+
+```bash
+# Build image
+make build
+
+# Run tests in Docker
+make test
+
+# Test the Docker build
+./test-docker.sh
+
+# Open shell in container for debugging
+make shell
+```
+
+### Running Tests
+
+```bash
+# Standard tests
+pytest tests/ -v --cov=. --cov-report=term
+
+# Docker tests
+./test-docker.sh
+
+# Integration tests
+pytest tests/test_integration.py -v
+
+# All tests with make
+make test
 ```
 
 ## 📄 License
@@ -341,11 +695,20 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Naviki](https://www.naviki.org/) for providing an excellent cycling navigation app
 - [Selenium](https://www.selenium.dev/) for browser automation
 - The cycling community for inspiration
+- Docker community for containerization best practices
 
 ## 📧 Contact
 
 - Create an [issue](https://github.com/Gheop/naviki-gpx-exporter/issues) for bugs or features
 - For questions, use [Discussions](https://github.com/Gheop/naviki-gpx-exporter/discussions)
+- Docker images: [GitHub Container Registry](https://github.com/Gheop/naviki-gpx-exporter/pkgs/container/naviki-gpx-exporter)
+
+## 🚀 Quick Links
+
+- **Docker Quick Start**: See [DOCKER_QUICKSTART.md](DOCKER_QUICKSTART.md)
+- **Tests**: Run `make test` or `pytest tests/`
+- **CI/CD**: GitHub Actions automatically builds and publishes Docker images
+- **Latest Docker Image**: `ghcr.io/gheop/naviki-gpx-exporter:latest`
 
 ---
 
@@ -353,3 +716,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **🌟 If this tool helped you, consider giving it a star!**
 
+**🐳 Docker users**: This project is Docker-ready! See the Docker sections above for zero-hassle installation.
