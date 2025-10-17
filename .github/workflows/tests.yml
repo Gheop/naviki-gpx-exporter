@@ -121,11 +121,6 @@ jobs:
         pip install -r requirements.txt
         pip install pytest responses
     
-    - name: Install geckodriver
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y firefox-geckodriver
-    
     - name: Run integration tests
       run: |
         pytest tests/test_integration.py -v
