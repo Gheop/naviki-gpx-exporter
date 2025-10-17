@@ -47,9 +47,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
     Returns:
         Token OAuth d'accès
     """
-    print(
-        "🤖 Lancement de l'authentification automatique avec Selenium..."
-    )
+    print("🤖 Lancement de l'authentification automatique avec Selenium...")
     print(f"   Username: {username}")
 
     if headless:
@@ -138,9 +136,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
 
             # Essayer de récupérer le token depuis localStorage
             try:
-                token = driver.execute_script(
-                    "return localStorage.getItem('_n_a_at');"
-                )
+                token = driver.execute_script("return localStorage.getItem('_n_a_at');")
 
                 if token:
                     print(f"   ✓ Token récupéré: {token[:20]}...")
@@ -150,10 +146,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
 
             # Vérifier si on a une erreur de connexion
             try:
-                page_text = (
-                    driver.find_element(By.TAG_NAME, "body")
-                    .text.lower()
-                )
+                page_text = driver.find_element(By.TAG_NAME, "body").text.lower()
                 if (
                     "error" in page_text
                     or "invalid" in page_text
@@ -171,10 +164,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
                 print(f"   ... tentative {attempt}/{max_attempts}")
 
         if not token:
-            print(
-                "\n❌ Timeout: le token n'est pas apparu dans "
-                "localStorage"
-            )
+            print("\n❌ Timeout: le token n'est pas apparu dans " "localStorage")
             print("Possibles causes:")
             print("   - Identifiants incorrects")
             print("   - Structure de la page Naviki a changé")
@@ -183,9 +173,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
             # Sauvegarder une capture d'écran pour debug
             screenshot_path = "/tmp/naviki_debug.png"
             driver.save_screenshot(screenshot_path)
-            print(
-                f"\n📸 Capture d'écran sauvegardée: {screenshot_path}"
-            )
+            print(f"\n📸 Capture d'écran sauvegardée: {screenshot_path}")
             print(f"   URL actuelle: {driver.current_url}")
 
             return None
@@ -238,9 +226,7 @@ Exemples:
         dest="username",
         help="Login/Username Naviki (pas un email)",
     )
-    auth_group.add_argument(
-        "--token", help="Token OAuth (si vous l'avez déjà)"
-    )
+    auth_group.add_argument("--token", help="Token OAuth (si vous l'avez déjà)")
 
     parser.add_argument(
         "--password",
@@ -269,19 +255,14 @@ Exemples:
     parser.add_argument(
         "--visible",
         action="store_true",
-        help=(
-            "Mode visible (voir le navigateur pendant "
-            "l'authentification)"
-        ),
+        help=("Mode visible (voir le navigateur pendant " "l'authentification)"),
     )
 
     args = parser.parse_args()
 
     # Validation: si username est fourni, password est requis
     if args.username and not args.password:
-        parser.error(
-            "--password est requis quand --username est utilisé"
-        )
+        parser.error("--password est requis quand --username est utilisé")
 
     # Par défaut headless sauf si --visible est spécifié
     if not args.visible and not args.headless:
@@ -378,10 +359,7 @@ def main():
         if r.status_code != 200:
             print(f"❌ Erreur API: {r.status_code}")
             if r.status_code == 401:
-                print(
-                    "⚠️  Token invalide ou expiré. "
-                    "Veuillez vous reconnecter."
-                )
+                print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
             break
 
         j = r.json()
@@ -421,27 +399,18 @@ def main():
                 if "crdate" in way:
                     # Use timezone-aware datetime
                     # (crdate is UTC timestamp)
-                    dt = datetime.fromtimestamp(
-                        way["crdate"], tz=timezone.utc
-                    )
+                    dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
                     # Use sanitized title as prefix if it's short
                     # and has no special chars
                     safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
                     if len(safe_title) > 3 and safe_title != title:
                         new_title = (
-                            f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_"
-                            f"{safe_title}.gpx"
+                            f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_" f"{safe_title}.gpx"
                         )
                     else:
-                        new_title = (
-                            dt.strftime("%Y-%m-%d_%H-%M")
-                            + "_UTC_Naviki.gpx"
-                        )
+                        new_title = dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
                 else:
-                    print(
-                        "❌ Impossible d'extraire la date, "
-                        "itinéraire ignoré"
-                    )
+                    print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
                     error_count += 1
                     continue
             else:
@@ -461,8 +430,7 @@ def main():
                     minute = m.group("minute")
                     if hour and minute:
                         new_title = (
-                            f"{year}-{month}-{day}_{hour}-{minute}"
-                            "_Naviki.gpx"
+                            f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
                         )
                     else:
                         raise IndexError  # Fall through to crdate
@@ -471,14 +439,9 @@ def main():
                     # (e.g., compact format 20241124)
                     # Use crdate for time
                     if "crdate" in way:
-                        dt = datetime.fromtimestamp(
-                            way["crdate"], tz=timezone.utc
-                        )
+                        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
                         time_str = dt.strftime("%H-%M")
-                        new_title = (
-                            f"{year}-{month}-{day}_{time_str}_UTC_"
-                            "Naviki.gpx"
-                        )
+                        new_title = f"{year}-{month}-{day}_{time_str}_UTC_" "Naviki.gpx"
                     else:
                         new_title = f"{year}-{month}-{day}_Naviki.gpx"
 
@@ -495,23 +458,17 @@ def main():
                 "oauth_token": oauth_token,
                 "format": "gpx",
             }
-            dl_headers = {
-                "Authorization": None
-            }  # token is passed in form data
+            dl_headers = {"Authorization": None}  # token is passed in form data
 
             try:
                 dl = s.post(
-                    "https://www.naviki.org/naviki/api/v6/Util/"
-                    "wayToFileWithUser/",
+                    "https://www.naviki.org/naviki/api/v6/Util/" "wayToFileWithUser/",
                     data=form_data,
                     headers=dl_headers,
                 )
 
                 if not dl.text.startswith("<?xml"):
-                    print(
-                        "❌ Échec du téléchargement GPX "
-                        "(réponse invalide)"
-                    )
+                    print("❌ Échec du téléchargement GPX " "(réponse invalide)")
                     error_count += 1
                     continue
 
@@ -530,10 +487,7 @@ def main():
     print(f"✅ Téléchargés: {success_count}")
     print(f"⏭️  Ignorés (déjà présents): {skipped_count}")
     print(f"❌ Erreurs: {error_count}")
-    print(
-        f"📊 Total traité: "
-        f"{success_count + skipped_count + error_count}"
-    )
+    print(f"📊 Total traité: " f"{success_count + skipped_count + error_count}")
     print(f"📁 Fichiers sauvegardés dans: {output_dir}")
 
 
