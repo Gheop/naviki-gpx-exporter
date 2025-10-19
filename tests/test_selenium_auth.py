@@ -22,7 +22,7 @@ spec = importlib.util.spec_from_file_location(
 )
 naviki_exporter = importlib.util.module_from_spec(spec)
 # Register in sys.modules so patches can find it
-sys.modules['naviki_exporter'] = naviki_exporter
+sys.modules["naviki_exporter"] = naviki_exporter
 spec.loader.exec_module(naviki_exporter)
 
 
@@ -191,9 +191,7 @@ class TestSeleniumAuth:
         from selenium.common.exceptions import WebDriverException
 
         # Make Firefox constructor raise an exception
-        mock_firefox.side_effect = WebDriverException(
-            "geckodriver not found"
-        )
+        mock_firefox.side_effect = WebDriverException("geckodriver not found")
 
         # Call function
         token = naviki_exporter.get_oauth_token_with_selenium(

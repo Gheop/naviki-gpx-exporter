@@ -22,17 +22,17 @@ spec = importlib.util.spec_from_file_location(
     ),
 )
 naviki_exporter = importlib.util.module_from_spec(spec)
-sys.modules['naviki_exporter'] = naviki_exporter
+sys.modules["naviki_exporter"] = naviki_exporter
 spec.loader.exec_module(naviki_exporter)
 
 
 class TestMainFunction:
     """Tests pour la fonction main avec mocks"""
 
-    @patch('sys.argv', ['prog', '--token', 'test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("sys.argv", ["prog", "--token", "test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
+    @patch("builtins.open", new_callable=mock_open)
     def test_main_with_token_success(self, mock_file, mock_path, mock_session):
         """Test main avec token fourni et téléchargement réussi"""
 
@@ -48,7 +48,7 @@ class TestMainFunction:
                 {
                     "uuid": "test-uuid-1",
                     "title": "16/10/2025, 07:20",
-                    "crdate": 1729065600
+                    "crdate": 1729065600,
                 }
             ]
         }
@@ -56,7 +56,7 @@ class TestMainFunction:
         # First call returns ways, second call returns empty to stop loop
         mock_session_instance.get.side_effect = [
             mock_response,
-            MagicMock(status_code=200, json=lambda: {"ways": []})
+            MagicMock(status_code=200, json=lambda: {"ways": []}),
         ]
 
         # Mock download response
@@ -79,9 +79,9 @@ class TestMainFunction:
         mock_session_instance.post.assert_called_once()
         mock_output_dir.mkdir.assert_called_once()
 
-    @patch('sys.argv', ['prog', '--username', 'testuser', '--password', 'testpass'])
-    @patch('naviki_exporter.get_oauth_token_with_selenium')
-    @patch('naviki_exporter.sys.exit')
+    @patch("sys.argv", ["prog", "--username", "testuser", "--password", "testpass"])
+    @patch("naviki_exporter.get_oauth_token_with_selenium")
+    @patch("naviki_exporter.sys.exit")
     def test_main_with_failed_auth(self, mock_exit, mock_auth):
         """Test main quand l'authentification échoue"""
 
@@ -94,9 +94,9 @@ class TestMainFunction:
         # Should call sys.exit(1)
         mock_exit.assert_called_once_with(1)
 
-    @patch('sys.argv', ['prog', '--token', 'test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
+    @patch("sys.argv", ["prog", "--token", "test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
     def test_main_with_api_error(self, mock_path, mock_session):
         """Test main avec erreur API"""
 
@@ -119,10 +119,10 @@ class TestMainFunction:
         # Should stop after error
         mock_session_instance.post.assert_not_called()
 
-    @patch('sys.argv', ['prog', '--token', 'test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("sys.argv", ["prog", "--token", "test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
+    @patch("builtins.open", new_callable=mock_open)
     def test_main_skip_existing_file(self, mock_file, mock_path, mock_session):
         """Test main ignore les fichiers existants"""
 
@@ -138,14 +138,14 @@ class TestMainFunction:
                 {
                     "uuid": "test-uuid-1",
                     "title": "16/10/2025, 07:20",
-                    "crdate": 1729065600
+                    "crdate": 1729065600,
                 }
             ]
         }
 
         mock_session_instance.get.side_effect = [
             mock_response,
-            MagicMock(status_code=200, json=lambda: {"ways": []})
+            MagicMock(status_code=200, json=lambda: {"ways": []}),
         ]
 
         # Mock path - file exists
@@ -161,10 +161,10 @@ class TestMainFunction:
         # Should not download if file exists
         mock_session_instance.post.assert_not_called()
 
-    @patch('sys.argv', ['prog', '--token', 'test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
-    @patch('builtins.open', new_callable=mock_open)
+    @patch("sys.argv", ["prog", "--token", "test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
+    @patch("builtins.open", new_callable=mock_open)
     def test_main_handle_custom_title(self, mock_file, mock_path, mock_session):
         """Test main avec titre personnalisé (sans date)"""
 
@@ -180,14 +180,14 @@ class TestMainFunction:
                 {
                     "uuid": "test-uuid-1",
                     "title": "Route de la Chapelle",  # No date
-                    "crdate": 1729065600
+                    "crdate": 1729065600,
                 }
             ]
         }
 
         mock_session_instance.get.side_effect = [
             mock_response,
-            MagicMock(status_code=200, json=lambda: {"ways": []})
+            MagicMock(status_code=200, json=lambda: {"ways": []}),
         ]
 
         # Mock download response
@@ -208,9 +208,9 @@ class TestMainFunction:
         # Should still download using crdate
         mock_session_instance.post.assert_called_once()
 
-    @patch('sys.argv', ['prog', '--token', 'test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
+    @patch("sys.argv", ["prog", "--token", "test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
     def test_main_handle_download_error(self, mock_path, mock_session):
         """Test main gère les erreurs de téléchargement"""
 
@@ -226,14 +226,14 @@ class TestMainFunction:
                 {
                     "uuid": "test-uuid-1",
                     "title": "16/10/2025, 07:20",
-                    "crdate": 1729065600
+                    "crdate": 1729065600,
                 }
             ]
         }
 
         mock_session_instance.get.side_effect = [
             mock_response,
-            MagicMock(status_code=200, json=lambda: {"ways": []})
+            MagicMock(status_code=200, json=lambda: {"ways": []}),
         ]
 
         # Mock download response - invalid GPX
@@ -254,13 +254,15 @@ class TestMainFunction:
         # Download was attempted but failed
         mock_session_instance.post.assert_called_once()
 
-    @patch('sys.argv', ['prog', '--username', 'testuser', '--password', 'testpass'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
-    @patch('builtins.open', new_callable=mock_open)
-    @patch('naviki_exporter.webdriver.Firefox')
-    @patch('naviki_exporter.time.sleep')
-    def test_main_with_username_password(self, mock_sleep, mock_firefox, mock_file, mock_path, mock_session):
+    @patch("sys.argv", ["prog", "--username", "testuser", "--password", "testpass"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
+    @patch("builtins.open", new_callable=mock_open)
+    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("naviki_exporter.time.sleep")
+    def test_main_with_username_password(
+        self, mock_sleep, mock_firefox, mock_file, mock_path, mock_session
+    ):
         """Test main avec username/password (authentification Selenium)"""
 
         # Mock Firefox to return a token
@@ -278,7 +280,7 @@ class TestMainFunction:
         ]
 
         # Mock WebDriverWait
-        with patch('naviki_exporter.WebDriverWait') as mock_wait:
+        with patch("naviki_exporter.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # Setup mock session
@@ -301,9 +303,9 @@ class TestMainFunction:
             # Verify Firefox was called (authentication happened)
             mock_firefox.assert_called_once()
 
-    @patch('sys.argv', ['prog', '--token', 'Bearer test-token-123'])
-    @patch('naviki_exporter.requests.Session')
-    @patch('naviki_exporter.pathlib.Path')
+    @patch("sys.argv", ["prog", "--token", "Bearer test-token-123"])
+    @patch("naviki_exporter.requests.Session")
+    @patch("naviki_exporter.pathlib.Path")
     def test_main_bearer_token_strip(self, mock_path, mock_session):
         """Test main retire le préfixe Bearer du token"""
 
@@ -328,8 +330,8 @@ class TestMainFunction:
         calls = mock_session_instance.headers.update.call_args_list
         auth_header = None
         for call in calls:
-            if 'Authorization' in call[0][0]:
-                auth_header = call[0][0]['Authorization']
+            if "Authorization" in call[0][0]:
+                auth_header = call[0][0]["Authorization"]
                 break
 
         assert auth_header == "Bearer test-token-123"

@@ -32,7 +32,13 @@ class TestParseArguments:
         monkeypatch.setattr(
             sys,
             "argv",
-            ["naviki-gpx-exporter.py", "--username", "testuser", "--password", "pass123"],
+            [
+                "naviki-gpx-exporter.py",
+                "--username",
+                "testuser",
+                "--password",
+                "pass123",
+            ],
         )
 
         spec.loader.exec_module(naviki_exporter)
