@@ -11,8 +11,8 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://hub.docker.com)
 
-[![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions)
-[![Docker Build](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml/badge.svg)](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml)
+[![Tests](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Gheop/naviki-gpx-exporter/actions)
+[![Docker Build](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml/badge.svg?branch=main)](https://github.com/Gheop/naviki-gpx-exporter/actions/workflows/docker.yml)
 [![Security Scan](https://img.shields.io/badge/security-trivy-blue.svg?logo=aqua)](https://github.com/Gheop/naviki-gpx-exporter/security)
 [![codecov](https://codecov.io/gh/Gheop/naviki-gpx-exporter/branch/main/graph/badge.svg)](https://codecov.io/gh/Gheop/naviki-gpx-exporter)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
