@@ -31,7 +31,75 @@ import re
 import pathlib
 import argparse
 import sys
+import os
 from datetime import datetime, timezone
+
+
+def load_env_file():
+    """
+    Charge les variables d'environnement depuis le fichier .env
+
+    Returns:
+        dict: Dictionnaire contenant les variables d'environnement
+    """
+    env_vars = {}
+    env_path = pathlib.Path(__file__).parent / ".env"
+
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                # Ignorer les lignes vides et les commentaires
+                if line and not line.startswith("#"):
+                    # Gérer les lignes de type KEY=value
+                    if "=" in line:
+                        key, value = line.split("=", 1)
+                        env_vars[key.strip()] = value.strip()
+
+    return env_vars
+
+
+def save_credentials_to_env(username, password):
+    """
+    Sauvegarde les identifiants dans le fichier .env
+
+    Args:
+        username: Nom d'utilisateur Naviki
+        password: Mot de passe Naviki
+    """
+    env_path = pathlib.Path(__file__).parent / ".env"
+
+    # Lire le contenu existant pour préserver les autres variables
+    existing_content = {}
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    existing_content[key.strip()] = value.strip()
+
+    # Mettre à jour les identifiants
+    existing_content["NAVIKI_USERNAME"] = username
+    existing_content["NAVIKI_PASSWORD"] = password
+
+    # Écrire le fichier .env
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.write("# Configuration Naviki GPX Exporter\n")
+        f.write("# Ce fichier est automatiquement généré et ignoré par Git\n\n")
+        f.write("# Identifiants Naviki\n")
+        f.write(f"NAVIKI_USERNAME={existing_content.get('NAVIKI_USERNAME', '')}\n")
+        f.write(f"NAVIKI_PASSWORD={existing_content.get('NAVIKI_PASSWORD', '')}\n")
+
+        # Ajouter les autres variables si elles existent
+        for key, value in existing_content.items():
+            if key not in ["NAVIKI_USERNAME", "NAVIKI_PASSWORD"]:
+                f.write(f"\n{key}={value}\n")
+
+    # Définir les permissions en lecture/écriture uniquement pour l'utilisateur
+    os.chmod(env_path, 0o600)
+    print(f"✅ Identifiants sauvegardés dans {env_path}")
+    print("🔒 Permissions définies à 600 " "(lecture/écriture uniquement pour vous)")
 
 
 def get_oauth_token_with_selenium(username, password, headless=True):
@@ -216,28 +284,41 @@ Exemples:
   %(prog)s --token 14dcc0f4-d964-396c-a19e-3cc42e36d372
   %(prog)s --username MonLogin --password monmdp --output ~/mes_traces
   %(prog)s --username MonLogin --password monmdp --headless
+  %(prog)s  # Utilise les identifiants sauvegardés dans .env
+
+Note: Les identifiants peuvent être sauvegardés dans le fichier .env
+      après une première authentification réussie.
         """,
     )
 
-    auth_group = parser.add_mutually_exclusive_group(required=True)
+    # Charger les variables d'environnement depuis .env
+    env_vars = load_env_file()
+
+    auth_group = parser.add_mutually_exclusive_group(required=False)
     auth_group.add_argument(
         "--username",
         "--login",
         dest="username",
+        default=env_vars.get("NAVIKI_USERNAME"),
         help="Login/Username Naviki (pas un email)",
     )
-    auth_group.add_argument("--token", help="Token OAuth (si vous l'avez déjà)")
+    auth_group.add_argument(
+        "--token",
+        default=env_vars.get("NAVIKI_TOKEN"),
+        help="Token OAuth (si vous l'avez déjà)",
+    )
 
     parser.add_argument(
         "--password",
+        default=env_vars.get("NAVIKI_PASSWORD"),
         help="Mot de passe Naviki (requis si --username est utilisé)",
     )
 
     parser.add_argument(
         "--output",
         "-o",
-        default="/tmp",
-        help="Dossier de destination des fichiers GPX (défaut: /tmp)",
+        default="./traces",
+        help="Dossier de destination des fichiers GPX (défaut: ./traces)",
     )
 
     parser.add_argument(
@@ -258,7 +339,20 @@ Exemples:
         help=("Mode visible (voir le navigateur pendant " "l'authentification)"),
     )
 
+    parser.add_argument(
+        "--save-credentials",
+        action="store_true",
+        help="Sauvegarder les identifiants dans .env pour les prochaines fois",
+    )
+
     args = parser.parse_args()
+
+    # Vérifier qu'on a soit un token, soit username + password
+    if not args.token and not args.username:
+        parser.error(
+            "Vous devez fournir soit --token, soit --username/--password, "
+            "ou avoir des identifiants sauvegardés dans .env"
+        )
 
     # Validation: si username est fourni, password est requis
     if args.username and not args.password:
@@ -267,6 +361,12 @@ Exemples:
     # Par défaut headless sauf si --visible est spécifié
     if not args.visible and not args.headless:
         args.headless = True
+
+    # Afficher si les identifiants proviennent de .env
+    if env_vars.get("NAVIKI_USERNAME") and not any(
+        arg in sys.argv for arg in ["--username", "--login", "--token"]
+    ):
+        print("🔑 Utilisation des identifiants depuis .env")
 
     return args
 
@@ -300,12 +400,18 @@ def main():
     args = parse_arguments()
 
     # Obtenir le token OAuth
+    credentials_used_from_args = False
     if args.token:
         oauth_token = args.token
         if oauth_token.startswith("Bearer "):
             oauth_token = oauth_token[7:]
         print("✅ Utilisation du token fourni")
     else:
+        # Vérifier si les identifiants proviennent des arguments de ligne de commande
+        credentials_used_from_args = any(
+            arg in sys.argv for arg in ["--username", "--login", "--password"]
+        )
+
         oauth_token = get_oauth_token_with_selenium(
             args.username, args.password, headless=args.headless
         )
@@ -322,6 +428,37 @@ def main():
                 f"--output {args.output}"
             )
             sys.exit(1)
+
+        # Proposer de sauvegarder les identifiants après authentification réussie
+        if credentials_used_from_args and not args.save_credentials:
+            env_path = pathlib.Path(__file__).parent / ".env"
+            # Ne proposer que si le fichier n'existe pas déjà avec ces identifiants
+            env_vars = load_env_file()
+            should_ask = (
+                not env_vars.get("NAVIKI_USERNAME")
+                or env_vars.get("NAVIKI_USERNAME") != args.username
+            )
+
+            if should_ask:
+                print(
+                    "\n💾 Voulez-vous sauvegarder ces identifiants "
+                    "pour les prochaines fois ?"
+                )
+                print(f"   Ils seront stockés de manière sécurisée " f"dans {env_path}")
+                print(
+                    "   (Ce fichier est ignoré par Git et ne sera "
+                    "jamais envoyé sur GitHub)"
+                )
+                response = input("   Sauvegarder ? [O/n] : ").strip().lower()
+
+                if response in ["o", "oui", "y", "yes", ""]:
+                    save_credentials_to_env(args.username, args.password)
+                    print("\n   La prochaine fois, vous pourrez lancer simplement:")
+                    print(f"   python {sys.argv[0]}")
+                else:
+                    print("   Identifiants non sauvegardés.")
+        elif args.save_credentials:
+            save_credentials_to_env(args.username, args.password)
 
     # Configuration
     route_types = args.types
