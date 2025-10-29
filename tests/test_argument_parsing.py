@@ -3,16 +3,14 @@
 Tests pour l'analyse des arguments de ligne de commande
 """
 
-import pytest
-import sys
+import importlib.util
 import os
+import sys
+
+import pytest
 
 # Add parent directory to path to import the main script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Import function to test - we need to do this carefully
-# to avoid triggering the main() execution
-import importlib.util
 
 spec = importlib.util.spec_from_file_location(
     "naviki_exporter",
@@ -183,7 +181,7 @@ class TestParseArguments:
         spec.loader.exec_module(naviki_exporter)
         args = naviki_exporter.parse_arguments()
 
-        assert args.output == "/tmp"  # Default output
+        assert args.output == "./traces"  # Default output
         assert args.types == "routedAll,recordedMy,recordedOthers"  # Default types
         assert args.headless is True  # Default headless
 

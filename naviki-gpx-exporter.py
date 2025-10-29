@@ -430,6 +430,7 @@ def main():
             sys.exit(1)
 
         # Proposer de sauvegarder les identifiants après authentification réussie
+        # Ne demander que si on n'est pas en mode test (stdin est disponible)
         if credentials_used_from_args and not args.save_credentials:
             env_path = pathlib.Path(__file__).parent / ".env"
             # Ne proposer que si le fichier n'existe pas déjà avec ces identifiants
@@ -439,7 +440,8 @@ def main():
                 or env_vars.get("NAVIKI_USERNAME") != args.username
             )
 
-            if should_ask:
+            # Vérifier si stdin est disponible (pas en mode test)
+            if should_ask and sys.stdin.isatty():
                 print(
                     "\n💾 Voulez-vous sauvegarder ces identifiants "
                     "pour les prochaines fois ?"
