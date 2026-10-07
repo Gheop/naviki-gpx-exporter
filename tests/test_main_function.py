@@ -243,6 +243,9 @@ class TestMainFunction:
         mock_session_instance.post.assert_called_once()
 
     @patch("sys.argv", ["prog", "--username", "testuser", "--password", "testpass"])
+    # pathlib.Path est simulé : le cache de token ne peut pas fonctionner ici
+    @patch("naviki_exporter.load_cached_token", lambda username: None)
+    @patch("naviki_exporter.save_cached_token", lambda username, token: None)
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)

@@ -157,3 +157,5 @@ ghostdriver.log
 # Debug
 naviki_debug.png
 debug_*.png
+# Cache du token OAuth
+.naviki-token.json

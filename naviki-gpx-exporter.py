@@ -30,6 +30,7 @@ import time
 import re
 import pathlib
 import argparse
+import json
 import sys
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -449,12 +450,63 @@ def download_gpx(session, oauth_token, uuid, save_path):
         return False
 
 
+# Cache du dernier token OAuth, pour ne relancer Firefox qu'à son expiration
+TOKEN_CACHE_NAME = ".naviki-token.json"
+
+
+def load_cached_token(username):
+    """Renvoie le token en cache pour ce compte, ou None."""
+    try:
+        cached = json.loads((config_dir() / TOKEN_CACHE_NAME).read_text("utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(cached, dict) or cached.get("username") != username:
+        return None
+    return cached.get("token") or None
+
+
+def save_cached_token(username, token):
+    """Écrit le token en cache, lisible par l'utilisateur seul."""
+    path = config_dir() / TOKEN_CACHE_NAME
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump({"username": username, "token": token}, f)
+        # un fichier préexistant garde ses droits avec os.open
+        os.chmod(path, 0o600)
+    except OSError as e:
+        print(f"⚠️  Token non mis en cache: {e}")
+
+
+def login_or_exit(args):
+    """Connexion Selenium ; quitte le programme si aucun token n'est obtenu."""
+    oauth_token = get_oauth_token_with_selenium(
+        args.username, args.password, headless=args.headless
+    )
+
+    if not oauth_token:
+        print("\n❌ Impossible de récupérer le token")
+        print("\n📋 Solution alternative:")
+        print("   1. Connectez-vous manuellement sur naviki.org")
+        print("   2. Ouvrez la console (F12)")
+        print("   3. Tapez: localStorage.getItem('_n_a_at')")
+        print("   4. Copiez le token et relancez avec:")
+        print(f"      python {sys.argv[0]} --token VOTRE-TOKEN --output {args.output}")
+        sys.exit(1)
+
+    # sys.exit peut être simulé (tests) : ne jamais mettre None en cache
+    if oauth_token:
+        save_cached_token(args.username, oauth_token)
+    return oauth_token
+
+
 def main():
     # Parse arguments
     args = parse_arguments()
 
     # Obtenir le token OAuth
     credentials_used_from_args = False
+    token_from_cache = False
     if args.token:
         oauth_token = args.token
         if oauth_token.startswith("Bearer "):
@@ -466,22 +518,12 @@ def main():
             arg in sys.argv for arg in ["--username", "--login", "--password"]
         )
 
-        oauth_token = get_oauth_token_with_selenium(
-            args.username, args.password, headless=args.headless
-        )
-
-        if not oauth_token:
-            print("\n❌ Impossible de récupérer le token")
-            print("\n📋 Solution alternative:")
-            print("   1. Connectez-vous manuellement sur naviki.org")
-            print("   2. Ouvrez la console (F12)")
-            print("   3. Tapez: localStorage.getItem('_n_a_at')")
-            print("   4. Copiez le token et relancez avec:")
-            print(
-                f"      python {sys.argv[0]} --token VOTRE-TOKEN "
-                f"--output {args.output}"
-            )
-            sys.exit(1)
+        oauth_token = load_cached_token(args.username)
+        token_from_cache = oauth_token is not None
+        if token_from_cache:
+            print("✅ Token en cache réutilisé, connexion Firefox évitée")
+        else:
+            oauth_token = login_or_exit(args)
 
         # Proposer de sauvegarder les identifiants après authentification réussie
         # Ne demander que si on n'est pas en mode test (stdin est disponible)
@@ -554,6 +596,13 @@ def main():
             f"&sort=crdateDesc&offset={offset}&fullDataSet=0"
             f"&_={timestamp}"
         )
+
+        if r.status_code == 401 and token_from_cache:
+            print("🔄 Token en cache expiré, reconnexion...")
+            token_from_cache = False
+            oauth_token = login_or_exit(args)
+            s.headers.update({"Authorization": f"Bearer {oauth_token}"})
+            continue
 
         if r.status_code != 200:
             print(f"❌ Erreur API: {r.status_code}")
