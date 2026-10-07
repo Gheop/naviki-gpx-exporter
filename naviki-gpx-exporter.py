@@ -27,6 +27,7 @@ import argparse
 import json
 import sys
 import os
+import tempfile
 import threading
 from urllib.parse import parse_qs, urlparse
 from concurrent.futures import ThreadPoolExecutor
@@ -316,7 +317,12 @@ def get_oauth_token_with_selenium(username, password, headless=True):
             print("   - Problème réseau")
 
             # Sauvegarder une capture d'écran pour debug
-            screenshot_path = "/tmp/naviki_debug.png"
+            # Fichier unique en 600 : un chemin fixe dans /tmp pouvait être
+            # pré-créé (lien symbolique) ou lu par un autre utilisateur
+            fd, screenshot_path = tempfile.mkstemp(
+                prefix="naviki_debug_", suffix=".png"
+            )
+            os.close(fd)
             driver.save_screenshot(screenshot_path)
             print(f"\n📸 Capture d'écran sauvegardée: {screenshot_path}")
             print(f"   URL actuelle: {driver.current_url}")

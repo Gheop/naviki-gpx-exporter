@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import sys
 import os
+import tempfile
 
 # Import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -134,6 +135,10 @@ class TestSeleniumAuth:
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
             mock_driver.save_screenshot.assert_called_once()
+            shot = mock_driver.save_screenshot.call_args.args[0]
+            assert os.path.basename(shot).startswith("naviki_debug_")
+            assert os.path.dirname(shot) == tempfile.gettempdir()
+            os.remove(shot)
 
     @patch("selenium.webdriver.Firefox")
     def test_authentication_with_error_page(self, mock_firefox):
