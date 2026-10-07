@@ -721,113 +721,129 @@ def main():
     in_flight = set()
     deferred = []
 
-    while more_to_download:
-        try:
-            r = s.get(
-                "https://www.naviki.org/naviki/api/v6/Way/2/"
-                f"findUserWaysByFilter/?filter={route_types}"
-                f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
-                "&fullDataSet=0"
-                f"&_={timestamp}",
-                timeout=HTTP_TIMEOUT,
-            )
-        except requests.RequestException as e:
-            api_error = True
-            print(f"❌ Erreur réseau sur la liste des trajets: {e}")
-            break
+    try:
+        while more_to_download:
+            try:
+                r = s.get(
+                    "https://www.naviki.org/naviki/api/v6/Way/2/"
+                    f"findUserWaysByFilter/?filter={route_types}"
+                    f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
+                    "&fullDataSet=0"
+                    f"&_={timestamp}",
+                    timeout=HTTP_TIMEOUT,
+                )
+            except requests.RequestException as e:
+                api_error = True
+                print(f"❌ Erreur réseau sur la liste des trajets: {e}")
+                break
 
-        if r.status_code == 401 and token_from_cache:
-            print("🔄 Token en cache expiré, reconnexion...")
-            token_from_cache = False
-            oauth_token = login_or_exit(args)
-            s.headers.update({"Authorization": f"Bearer {oauth_token}"})
-            continue
+            if r.status_code == 401 and token_from_cache:
+                print("🔄 Token en cache expiré, reconnexion...")
+                token_from_cache = False
+                oauth_token = login_or_exit(args)
+                s.headers.update({"Authorization": f"Bearer {oauth_token}"})
+                continue
 
-        if r.status_code != 200:
-            api_error = True
-            print(f"❌ Erreur API: {r.status_code}")
-            if r.status_code == 401:
-                print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
-            break
+            if r.status_code != 200:
+                api_error = True
+                print(f"❌ Erreur API: {r.status_code}")
+                if r.status_code == 401:
+                    print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
+                break
 
-        j = r.json()
-        more_to_download = len(j["ways"]) > 0
-        offset += len(j["ways"])
+            j = r.json()
+            more_to_download = len(j["ways"]) > 0
+            offset += len(j["ways"])
 
-        for way in j["ways"]:
-            uuid = way["uuid"]
-            title = way["title"]
-            print(f"\nTraitement: {title}")
-            print(f"UUID: {uuid}")
+            for way in j["ways"]:
+                uuid = way["uuid"]
+                title = way["title"]
+                print(f"\nTraitement: {title}")
+                print(f"UUID: {uuid}")
 
-            parts = date_from_title(title)
+                parts = date_from_title(title)
 
-            if parts is None:
-                # Fallback: use crdate timestamp with timezone awareness
-                # Check if title looks like a place name
-                # (contains letters/spaces)
-                if any(c.isalpha() for c in title) and not any(
-                    c.isdigit() for c in title[:4]
-                ):
-                    print(
-                        f"ℹ️  Titre personnalisé détecté "
-                        f"('{title[:30]}...'), utilisation de crdate"
-                    )
-                else:
-                    print(
-                        f"⚠️  Format de date non standard dans "
-                        f"'{title}', utilisation de crdate"
-                    )
-
-                if "crdate" in way:
-                    # Use timezone-aware datetime
-                    # (crdate is UTC timestamp)
-                    dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                    # Use sanitized title as prefix if it's short
-                    # and has no special chars
-                    safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
-                    if len(safe_title) > 3 and safe_title != title:
-                        new_title = (
-                            f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_" f"{safe_title}.gpx"
+                if parts is None:
+                    # Fallback: use crdate timestamp with timezone awareness
+                    # Check if title looks like a place name
+                    # (contains letters/spaces)
+                    if any(c.isalpha() for c in title) and not any(
+                        c.isdigit() for c in title[:4]
+                    ):
+                        print(
+                            f"ℹ️  Titre personnalisé détecté "
+                            f"('{title[:30]}...'), utilisation de crdate"
                         )
                     else:
-                        new_title = dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
-                else:
-                    print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
-                    error_count += 1
-                    continue
-            else:
-                year, month, day = parts["year"], parts["month"], parts["day"]
-                hour, minute = parts.get("hour"), parts.get("minute")
-                if hour and minute:
-                    new_title = f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
-                else:
-                    # Pas d'heure dans le titre (ex. format compact 20241124) :
-                    # l'heure vient de crdate
+                        print(
+                            f"⚠️  Format de date non standard dans "
+                            f"'{title}', utilisation de crdate"
+                        )
+
                     if "crdate" in way:
+                        # Use timezone-aware datetime
+                        # (crdate is UTC timestamp)
                         dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                        time_str = dt.strftime("%H-%M")
-                        new_title = f"{year}-{month}-{day}_{time_str}_UTC_" "Naviki.gpx"
+                        # Use sanitized title as prefix if it's short
+                        # and has no special chars
+                        safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
+                        if len(safe_title) > 3 and safe_title != title:
+                            new_title = (
+                                f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_"
+                                f"{safe_title}.gpx"
+                            )
+                        else:
+                            new_title = (
+                                dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
+                            )
                     else:
-                        new_title = f"{year}-{month}-{day}_Naviki.gpx"
+                        print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
+                        error_count += 1
+                        continue
+                else:
+                    year, month, day = parts["year"], parts["month"], parts["day"]
+                    hour, minute = parts.get("hour"), parts.get("minute")
+                    if hour and minute:
+                        new_title = (
+                            f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
+                        )
+                    else:
+                        # Pas d'heure dans le titre (ex. format compact 20241124) :
+                        # l'heure vient de crdate
+                        if "crdate" in way:
+                            dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
+                            time_str = dt.strftime("%H-%M")
+                            new_title = (
+                                f"{year}-{month}-{day}_{time_str}_UTC_" "Naviki.gpx"
+                            )
+                        else:
+                            new_title = f"{year}-{month}-{day}_Naviki.gpx"
 
-            # Check if file already exists
-            save_path = output_dir.joinpath(new_title)
-            if save_path.exists():
-                print(f"⏭️  Déjà présent, ignoré: {new_title}")
-                skipped_count += 1
-                continue
+                # Check if file already exists
+                save_path = output_dir.joinpath(new_title)
+                if save_path.exists():
+                    print(f"⏭️  Déjà présent, ignoré: {new_title}")
+                    skipped_count += 1
+                    continue
 
-            # Un fichier du même nom en cours de téléchargement serait écrasé :
-            # on le traite après le pool, comme le ferait le mode séquentiel
-            if save_path in in_flight:
-                deferred.append((uuid, save_path))
-                continue
+                # Un fichier du même nom en cours de téléchargement serait écrasé :
+                # on le traite après le pool, comme le ferait le mode séquentiel
+                if save_path in in_flight:
+                    deferred.append((uuid, save_path))
+                    continue
 
-            in_flight.add(save_path)
-            downloads.append(pool.submit(download_gpx, s, oauth_token, uuid, save_path))
+                in_flight.add(save_path)
+                downloads.append(
+                    pool.submit(download_gpx, s, oauth_token, uuid, save_path)
+                )
 
-    pool.shutdown(wait=True)
+        pool.shutdown(wait=True)
+    except KeyboardInterrupt:
+        # Sans annulation, les threads du pool videraient toute la file
+        # avant que le processus ne s'arrête (~50 s sur un export complet)
+        pool.shutdown(wait=False, cancel_futures=True)
+        print("\n⛔ Interrompu : téléchargements en attente annulés")
+        sys.exit(130)
     results = [f.result() for f in downloads]
     for uuid, save_path in deferred:
         if save_path.exists():

@@ -2,6 +2,7 @@
 Tests du téléchargement parallèle : mêmes résultats que l'ancien mode séquentiel
 """
 
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -96,3 +97,33 @@ def test_network_error_on_list_exits_1(tmp_path, capsys):
 
     assert exit_info.value.code == 1
     assert "Erreur réseau sur la liste des trajets" in capsys.readouterr().out
+
+
+def test_ctrl_c_cancels_queued_downloads(tmp_path):
+    """Ctrl-C pendant la pagination : seuls les téléchargements démarrés finissent"""
+    ways = [
+        {"uuid": f"u{i}", "title": f"{i + 1:02d}/10/2025, 07:20", "crdate": 0}
+        for i in range(20)
+    ]
+    session = MagicMock()
+    session.get.side_effect = [
+        MagicMock(status_code=200, json=lambda: {"ways": ways}),
+        KeyboardInterrupt,
+    ]
+
+    def slow_download(*args, **kwargs):
+        time.sleep(0.2)
+        return MagicMock(text="<?xml ok")
+
+    session.post.side_effect = slow_download
+    argv = ["prog", "--token", "tok", "--output", str(tmp_path / "traces")]
+    with (
+        patch("sys.argv", argv),
+        patch("naviki_exporter.requests.Session", return_value=session),
+        pytest.raises(SystemExit) as exit_info,
+    ):
+        naviki_exporter.main()
+
+    assert exit_info.value.code == 130
+    time.sleep(0.5)  # laisse finir les téléchargements déjà démarrés
+    assert session.post.call_count <= naviki_exporter.DOWNLOAD_WORKERS
