@@ -370,6 +370,16 @@ docker run --rm \
   --output /output
 ```
 
+#### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0    | Every route was downloaded or already present |
+| 1    | Login failed, the API returned an error, or at least one download failed |
+| 130  | Interrupted with Ctrl-C; queued downloads are cancelled |
+
+A cron job or a wrapper script can rely on a non-zero code to raise an alert.
+
 #### Example 5: Automated daily backup (cron)
 
 **Standard Python:**
@@ -797,5 +807,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date       | Changes                                                              |
 |---------|------------|----------------------------------------------------------------------|
+| 1.1.0   | 2026-10-07 | Add exit codes section                                              |
 | 1.0.1   | 2026-10-07 | Document HTTP login, make Firefox optional, update sync timings      |
 | 1.0.0   | 2026-10-07 | Initialize changelog, document token cache and parallel downloads |
