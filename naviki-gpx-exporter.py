@@ -282,7 +282,9 @@ def get_oauth_token_with_selenium(username, password, headless=True):
                 token = driver.execute_script("return localStorage.getItem('_n_a_at');")
 
                 if token:
-                    print(f"   ✓ Token récupéré: {token[:20]}...")
+                    # Aucun caractère du token : la sortie finit souvent dans
+                    # des logs (cron, Docker)
+                    print("   ✓ Token récupéré")
                     break
             except Exception:
                 pass

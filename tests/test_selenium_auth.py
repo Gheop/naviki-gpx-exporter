@@ -18,7 +18,7 @@ class TestSeleniumAuth:
     """Tests pour get_oauth_token_with_selenium avec mocks"""
 
     @patch("selenium.webdriver.Firefox")
-    def test_successful_authentication_headless(self, mock_firefox):
+    def test_successful_authentication_headless(self, mock_firefox, capsys):
         """Test authentification réussie en mode headless"""
         # Setup mock driver
         mock_driver = MagicMock()
@@ -48,6 +48,7 @@ class TestSeleniumAuth:
 
             # Assertions
             assert token == "test-token-12345"
+            assert "test-token" not in capsys.readouterr().out
             mock_firefox.assert_called_once()
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
