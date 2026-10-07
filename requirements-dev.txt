@@ -12,4 +12,3 @@ black==26.10.0  # même version que .pre-commit-config.yaml
 
 # Security
 pip-audit>=2.7.0
-safety>=3.0.0
