@@ -49,6 +49,7 @@ class TestSeleniumAuth:
             # Assertions
             assert token == "test-token-12345"
             mock_firefox.assert_called_once()
+            naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
     @patch("naviki_exporter.webdriver.Firefox")
@@ -82,6 +83,7 @@ class TestSeleniumAuth:
 
             # Assertions
             assert token == "test-token-visible"
+            naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
     @patch("naviki_exporter.webdriver.Firefox")
@@ -128,6 +130,7 @@ class TestSeleniumAuth:
 
             # Assertions
             assert token is None
+            naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
             mock_driver.save_screenshot.assert_called_once()
 
@@ -171,7 +174,8 @@ class TestSeleniumAuth:
 
                 # Assertions
                 assert token is None
-                mock_driver.quit.assert_called_once()
+                naviki_exporter.wait_browser_closed()
+            mock_driver.quit.assert_called_once()
 
     @patch("naviki_exporter.webdriver.Firefox")
     def test_webdriver_exception(self, mock_firefox):
@@ -215,7 +219,8 @@ class TestSeleniumAuth:
 
                 # Even with timeout, it might get token from localStorage
                 assert token == "token-after-timeout"
-                mock_driver.quit.assert_called_once()
+                naviki_exporter.wait_browser_closed()
+            mock_driver.quit.assert_called_once()
 
     @patch("naviki_exporter.webdriver.Firefox")
     def test_form_submit_fallback(self, mock_firefox):
@@ -251,6 +256,7 @@ class TestSeleniumAuth:
             # Should use password_field.submit() as fallback
             assert token == "test-token-submit"
             mock_password_field.submit.assert_called_once()
+            naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
 

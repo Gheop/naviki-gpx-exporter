@@ -33,6 +33,7 @@ import argparse
 import json
 import sys
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -144,6 +145,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
     options.set_preference("devtools.console.stdout.content", False)
 
     driver = None
+    token = None
 
     try:
         print("\n🌐 Ouverture du navigateur Firefox...")
@@ -282,7 +284,23 @@ def get_oauth_token_with_selenium(username, password, headless=True):
     finally:
         if driver:
             print("\n🔒 Fermeture du navigateur...")
-            driver.quit()
+            if token:
+                # Firefox met ~1 s à se fermer : la pagination avance pendant ce temps
+                global _browser_closer
+                _browser_closer = threading.Thread(target=driver.quit)
+                _browser_closer.start()
+            else:
+                driver.quit()
+
+
+# Fermeture de Firefox lancée après un login réussi, attendue en fin de programme
+_browser_closer = None
+
+
+def wait_browser_closed():
+    """Attend la fin de la fermeture de Firefox, si elle est en cours."""
+    if _browser_closer is not None:
+        _browser_closer.join()
 
 
 def parse_arguments():
@@ -727,6 +745,7 @@ def main():
     print(f"❌ Erreurs: {error_count}")
     print(f"📊 Total traité: " f"{success_count + skipped_count + error_count}")
     print(f"📁 Fichiers sauvegardés dans: {output_dir}")
+    wait_browser_closed()
 
 
 if __name__ == "__main__":
