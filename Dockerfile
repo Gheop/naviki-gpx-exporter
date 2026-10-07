@@ -1,5 +1,5 @@
 # Dockerfile pour naviki-gpx-exporter
-FROM python:3.10-slim-bullseye
+FROM python:3.10-slim-bookworm
 
 # Variables d'environnement pour éviter les prompts interactifs
 ENV DEBIAN_FRONTEND=noninteractive \
