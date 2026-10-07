@@ -225,3 +225,42 @@ class TestEnvironmentCredentials:
         args = self.parse([])
 
         assert (args.username, args.password) == ("from_file", "env_pw")
+
+
+class TestEnvFilePrecedence:
+    """Lecture du .env : guillemets, et priorité de la ligne de commande"""
+
+    def parse(self, argv):
+        exporter = sys.modules["naviki_exporter"]
+        with patch("sys.argv", ["prog", *argv]):
+            return exporter.parse_arguments()
+
+    def test_quotes_are_stripped(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text(
+            "NAVIKI_USERNAME='alice'\nNAVIKI_PASSWORD=\"pa ss\"\n"
+        )
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("alice", "pa ss")
+
+    def test_saved_token_does_not_override_cli_username(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text("NAVIKI_TOKEN=saved-token\n")
+
+        args = self.parse(["--username", "alice", "--password", "pw"])
+
+        assert args.token is None
+        assert args.username == "alice"
+
+    def test_saved_username_does_not_block_cli_token(self, isolated_config_dir):
+        # un NAVIKI_USERNAME sans mot de passe faisait échouer --token
+        (isolated_config_dir / ".env").write_text("NAVIKI_USERNAME=alice\n")
+
+        args = self.parse(["--token", "tok"])
+
+        assert (args.token, args.username) == ("tok", None)
+
+    def test_without_cli_saved_values_apply(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text("NAVIKI_TOKEN=saved-token\n")
+
+        assert self.parse([]).token == "saved-token"

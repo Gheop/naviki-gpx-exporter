@@ -62,7 +62,12 @@ def load_env_file():
                     # Gérer les lignes de type KEY=value
                     if "=" in line:
                         key, value = line.split("=", 1)
-                        env_vars[key.strip()] = value.strip()
+                        value = value.strip()
+                        # KEY="valeur" : guillemets retirés, comme le font
+                        # la plupart des outils .env
+                        if len(value) >= 2 and value[0] == value[-1] in "\"'":
+                            value = value[1:-1]
+                        env_vars[key.strip()] = value
 
     return env_vars
 
@@ -400,12 +405,10 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
         "--username",
         "--login",
         dest="username",
-        default=env_vars.get("NAVIKI_USERNAME"),
         help="Login/Username Naviki (pas un email)",
     )
     auth_group.add_argument(
         "--token",
-        default=env_vars.get("NAVIKI_TOKEN"),
         help="Token OAuth (si vous l'avez déjà)",
     )
 
@@ -448,6 +451,14 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
 
     args = parser.parse_args()
 
+    # Valeurs par défaut appliquées après coup, pour savoir ce qui vient de la
+    # ligne de commande : un NAVIKI_TOKEN enregistré ne doit pas remplacer en
+    # silence un --username donné explicitement (et inversement)
+    auth_from_cli = args.username is not None or args.token is not None
+    if not auth_from_cli:
+        args.username = env_vars.get("NAVIKI_USERNAME")
+        args.token = env_vars.get("NAVIKI_TOKEN")
+
     # Vérifier qu'on a soit un token, soit username + password
     if not args.token and not args.username:
         parser.error(
@@ -463,10 +474,8 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
     if not args.visible and not args.headless:
         args.headless = True
 
-    # Afficher si les identifiants proviennent de .env
-    if env_vars.get("NAVIKI_USERNAME") and not any(
-        arg in sys.argv for arg in ["--username", "--login", "--token"]
-    ):
+    # Afficher si les identifiants proviennent de l'environnement ou de .env
+    if not auth_from_cli and (args.username or args.token):
         print("🔑 Utilisation des identifiants de l'environnement ou de .env")
 
     return args
