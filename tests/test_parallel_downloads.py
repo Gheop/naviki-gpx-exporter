@@ -73,3 +73,26 @@ def test_duplicate_name_retried_after_failure(tmp_path, capsys):
     assert "✅ Téléchargés: 1" in out
     assert "❌ Erreurs: 1" in out
     assert (out_dir / "2025-10-16_07-20_Naviki.gpx").read_text() == "<?xml second"
+
+
+def test_every_request_has_a_timeout(tmp_path):
+    ways = [{"uuid": "a", "title": "16/10/2025, 07:20", "crdate": 0}]
+    session = run_main(tmp_path / "traces", ways, ["<?xml ok"])
+
+    for call in session.get.call_args_list + session.post.call_args_list:
+        assert call.kwargs["timeout"] == naviki_exporter.HTTP_TIMEOUT
+
+
+def test_network_error_on_list_exits_1(tmp_path, capsys):
+    session = MagicMock()
+    session.get.side_effect = naviki_exporter.requests.Timeout("read timed out")
+    argv = ["prog", "--token", "tok", "--output", str(tmp_path / "traces")]
+    with (
+        patch("sys.argv", argv),
+        patch("naviki_exporter.requests.Session", return_value=session),
+        pytest.raises(SystemExit) as exit_info,
+    ):
+        naviki_exporter.main()
+
+    assert exit_info.value.code == 1
+    assert "Erreur réseau sur la liste des trajets" in capsys.readouterr().out

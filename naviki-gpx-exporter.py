@@ -519,6 +519,11 @@ def date_from_title(title):
     return None
 
 
+# (connexion, lecture) en secondes : sans timeout, requests attend
+# indéfiniment une réponse qui ne vient pas. Le GPX le plus lent mesuré
+# prend 0,6 s.
+HTTP_TIMEOUT = (10, 60)
+
 # Téléchargements simultanés : ~4x plus rapide sur un export complet,
 # sans charger davantage le serveur Naviki
 DOWNLOAD_WORKERS = 4
@@ -548,6 +553,7 @@ def download_gpx(session, oauth_token, uuid, save_path):
             "https://www.naviki.org/naviki/api/v6/Util/" "wayToFileWithUser/",
             data=form_data,
             headers=dl_headers,
+            timeout=HTTP_TIMEOUT,
         )
 
         if not dl.text.startswith("<?xml"):
@@ -716,13 +722,19 @@ def main():
     deferred = []
 
     while more_to_download:
-        r = s.get(
-            "https://www.naviki.org/naviki/api/v6/Way/2/"
-            f"findUserWaysByFilter/?filter={route_types}"
-            f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
-            "&fullDataSet=0"
-            f"&_={timestamp}"
-        )
+        try:
+            r = s.get(
+                "https://www.naviki.org/naviki/api/v6/Way/2/"
+                f"findUserWaysByFilter/?filter={route_types}"
+                f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
+                "&fullDataSet=0"
+                f"&_={timestamp}",
+                timeout=HTTP_TIMEOUT,
+            )
+        except requests.RequestException as e:
+            api_error = True
+            print(f"❌ Erreur réseau sur la liste des trajets: {e}")
+            break
 
         if r.status_code == 401 and token_from_cache:
             print("🔄 Token en cache expiré, reconnexion...")
