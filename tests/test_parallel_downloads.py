@@ -4,12 +4,14 @@ Tests du téléchargement parallèle : mêmes résultats que l'ancien mode séqu
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 import naviki_exporter  # noqa: E402  (chargé par conftest.py)
 
 SAME_MINUTE = "16/10/2025, 07:20"
 
 
-def run_main(out, ways, gpx_responses):
+def run_main(out, ways, gpx_responses, expected_exit=None):
     session = MagicMock()
     session.get.side_effect = [
         MagicMock(status_code=200, json=lambda: {"ways": ways}),
@@ -21,7 +23,12 @@ def run_main(out, ways, gpx_responses):
         patch("sys.argv", argv),
         patch("naviki_exporter.requests.Session", return_value=session),
     ):
-        naviki_exporter.main()
+        if expected_exit is None:
+            naviki_exporter.main()
+        else:
+            with pytest.raises(SystemExit) as exit_info:
+                naviki_exporter.main()
+            assert exit_info.value.code == expected_exit
     return session
 
 
@@ -59,7 +66,7 @@ def test_duplicate_name_retried_after_failure(tmp_path, capsys):
         {"uuid": "a", "title": SAME_MINUTE, "crdate": 0},
         {"uuid": "b", "title": SAME_MINUTE, "crdate": 0},
     ]
-    session = run_main(out_dir, ways, ["not xml", "<?xml second"])
+    session = run_main(out_dir, ways, ["not xml", "<?xml second"], expected_exit=1)
 
     out = capsys.readouterr().out
     assert session.post.call_count == 2

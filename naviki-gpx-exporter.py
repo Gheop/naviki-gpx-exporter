@@ -707,6 +707,7 @@ def main():
     success_count = 0
     error_count = 0
     skipped_count = 0
+    api_error = False
 
     # Les téléchargements partent pendant que la pagination continue
     pool = ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS)
@@ -731,6 +732,7 @@ def main():
             continue
 
         if r.status_code != 200:
+            api_error = True
             print(f"❌ Erreur API: {r.status_code}")
             if r.status_code == 401:
                 print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
@@ -832,6 +834,10 @@ def main():
     print(f"📊 Total traité: " f"{success_count + skipped_count + error_count}")
     print(f"📁 Fichiers sauvegardés dans: {output_dir}")
     wait_browser_closed()
+
+    # Code non nul pour qu'un cron ou un script appelant voie l'échec
+    if api_error or error_count:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
