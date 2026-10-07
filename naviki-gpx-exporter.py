@@ -519,6 +519,45 @@ def date_from_title(title):
     return None
 
 
+def legacy_date_from_title(title):
+    """
+    Lecture des dates d'avant 1fbecdf : premier motif trouvé, même si la date
+    n'existe pas (« Gouter30012024 » donnait 3001-20-24). Ne sert qu'à
+    retrouver les fichiers enregistrés sous ces noms.
+    """
+    for pattern in patterns:
+        m = re.search(pattern, title)
+        if m:
+            parts = m.groupdict()
+            if len(parts["year"]) == 2:
+                parts["year"] = "20" + parts["year"]
+            return parts
+    return None
+
+
+def rename_legacy_file(way, output_dir, save_path):
+    """
+    Renomme vers save_path le fichier d'un trajet enregistré sous son ancien
+    nom erroné, pour éviter de le retélécharger en double.
+
+    Returns:
+        True si un fichier a été renommé.
+    """
+    legacy_parts = legacy_date_from_title(way["title"])
+    # Un ancien nom ne diffère du bon que s'il porte une date impossible :
+    # il ne peut donc pas être le fichier correct d'un autre trajet
+    if legacy_parts is None or is_real_date(
+        legacy_parts["year"], legacy_parts["month"], legacy_parts["day"]
+    ):
+        return False
+    legacy_path = output_dir / gpx_filename(way, legacy_parts)
+    if legacy_path == save_path or not legacy_path.exists():
+        return False
+    os.replace(legacy_path, save_path)
+    print(f"🔁 Renommé: {legacy_path.name} → {save_path.name}")
+    return True
+
+
 def gpx_filename(way, parts):
     """
     Nom du fichier GPX d'un trajet. C'est la clé de déduplication de
@@ -828,6 +867,8 @@ def main():
 
                 # Check if file already exists
                 save_path = output_dir.joinpath(new_title)
+                if not save_path.exists():
+                    rename_legacy_file(way, output_dir, save_path)
                 if save_path.exists():
                     print(f"⏭️  Déjà présent, ignoré: {new_title}")
                     skipped_count += 1

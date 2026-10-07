@@ -146,3 +146,17 @@ def test_interrupted_write_leaves_no_gpx(tmp_path):
     assert naviki_exporter.download_gpx(session, "tok", "u1", save_path) is True
     assert save_path.read_text() == "<?xml ok"
     assert [p.name for p in tmp_path.iterdir() if p.suffix == ".part"] == []
+
+
+def test_main_renames_legacy_file_instead_of_downloading(tmp_path, capsys):
+    out_dir = tmp_path / "traces"
+    out_dir.mkdir()
+    (out_dir / "3001-20-24_00-00_UTC_Naviki.gpx").write_text("<?xml archive")
+    ways = [{"uuid": "a", "title": "Gouter30012024", "crdate": 0}]
+
+    session = run_main(out_dir, ways, [])
+
+    session.post.assert_not_called()
+    assert [p.name for p in out_dir.iterdir()] == ["2024-01-30_00-00_UTC_Naviki.gpx"]
+    out = capsys.readouterr().out
+    assert "🔁 Renommé" in out and "⏭️  Ignorés (déjà présents): 1" in out
