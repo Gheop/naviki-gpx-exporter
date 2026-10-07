@@ -35,9 +35,9 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 
 ## ✨ Features
 
-- 🤖 **Fully automated authentication** using Selenium WebDriver
+- 🤖 **Fully automated authentication** - direct HTTP login in ~0.5 s, Selenium WebDriver as fallback
 - 📦 **Batch download** all your Naviki routes in one command, 4 files at a time
-- 🔑 **Token cache** - Firefox only starts when the cached token has expired
+- 🔑 **Token cache** - no login at all while the cached token is valid
 - 🔄 **Incremental sync** - skips already downloaded files
 - 📅 **Smart date parsing** - handles multiple date formats
 - 🎯 **Flexible filtering** - export recorded, planned, or shared routes
@@ -51,8 +51,7 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 
 ### Standard Installation
 - **Python 3.7+**
-- **Firefox browser** (for Selenium)
-- **geckodriver** (Firefox WebDriver)
+- **Firefox browser** and **geckodriver**: only used as a fallback if the direct login fails, and with `--visible`
 - A Naviki account with recorded routes
 
 ### Docker Installation (Recommended)
@@ -84,6 +83,8 @@ pip install selenium requests beautifulsoup4
 ```
 
 #### 3. Install geckodriver (Firefox WebDriver)
+
+The script logs in over plain HTTP. Firefox is only started if that fails (for example after a change on naviki.org) or with `--visible`, so this step is optional but recommended.
 
 **Ubuntu/Debian:**
 ```bash
@@ -162,7 +163,7 @@ python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 
 #### Token Cache
 
-After a successful login, the OAuth token is saved to `.naviki-token.json` (mode 600, ignored by Git) next to the script. Later runs with the same username reuse it and skip Firefox entirely, which brings a daily sync from ~9 s to ~2 s. When Naviki rejects the token (HTTP 401), the script logs in again and refreshes the cache.
+After a successful login, the OAuth token is saved to `.naviki-token.json` (mode 600, ignored by Git) next to the script. Later runs with the same username reuse it and skip the login, so a daily sync of ~430 routes takes ~0.8 s (~1.4 s when a login is needed). When Naviki rejects the token (HTTP 401), the script logs in again and refreshes the cache.
 
 To force a new login, delete the file:
 
@@ -796,4 +797,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date       | Changes                                                              |
 |---------|------------|----------------------------------------------------------------------|
+| 1.0.1   | 2026-10-07 | Document HTTP login, make Firefox optional, update sync timings      |
 | 1.0.0   | 2026-10-07 | Initialize changelog, document token cache and parallel downloads |
