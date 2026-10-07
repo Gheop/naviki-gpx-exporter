@@ -164,17 +164,22 @@ if [[ "$VISIBLE" == true ]]; then
     fi
 fi
 
+# Identifiants transmis par l'environnement : « -e NOM » sans valeur fait
+# lire la valeur par docker dans son propre environnement, elle n'apparaît
+# donc ni dans la ligne de commande de docker ni dans celle du conteneur
+if [[ -n "$TOKEN" ]]; then
+    export NAVIKI_TOKEN="$TOKEN"
+    DOCKER_ARGS+=("-e" "NAVIKI_TOKEN")
+else
+    export NAVIKI_USERNAME="$USERNAME" NAVIKI_PASSWORD="$PASSWORD"
+    DOCKER_ARGS+=("-e" "NAVIKI_USERNAME" "-e" "NAVIKI_PASSWORD")
+fi
+
 # Image
 DOCKER_ARGS+=("$IMAGE_NAME")
 
 # Arguments du script Python
 SCRIPT_ARGS=()
-
-if [[ -n "$TOKEN" ]]; then
-    SCRIPT_ARGS+=("--token" "$TOKEN")
-else
-    SCRIPT_ARGS+=("--username" "$USERNAME" "--password" "$PASSWORD")
-fi
 
 SCRIPT_ARGS+=("--output" "/output")
 SCRIPT_ARGS+=("--types" "$TYPES")
