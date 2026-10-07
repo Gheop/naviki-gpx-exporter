@@ -105,7 +105,7 @@ jobs:
     - name: Run pip-audit
       run: |
         pip-audit -r requirements.txt --strict --desc
-        pip-audit -r requirements.lock --require-hashes --strict --desc
+        pip-audit -r requirements-lock.txt --require-hashes --strict --desc
 
   integration:
     name: Integration Tests (Mocked)

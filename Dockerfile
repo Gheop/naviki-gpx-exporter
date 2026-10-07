@@ -38,8 +38,8 @@ WORKDIR /app
 
 # Dépendances verrouillées avec empreintes : image reproductible, et un
 # paquet altéré sur PyPI fait échouer le build
-COPY requirements.lock .
-RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+COPY requirements-lock.txt .
+RUN pip install --no-cache-dir --require-hashes -r requirements-lock.txt
 
 # Copie du script principal
 COPY naviki-gpx-exporter.py .

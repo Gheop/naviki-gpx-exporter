@@ -1,0 +1,29 @@
+# Mises à jour hebdomadaires, regroupées par écosystème : une PR par semaine
+# au plus pour chacun, validée par la CI (tests, pip-audit, build et scan
+# Trivy de l'image) avant toute fusion.
+version: 2
+updates:
+  # requirements.txt (bornes) et requirements-lock.in -> requirements-lock.txt,
+  # recompilé par pip-compile avec ses empreintes
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        patterns: ["*"]
+
+  # Actions des workflows, y compris trivy-action épinglée par SHA
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  # Image de base du Dockerfile (python:3.13-slim-bookworm)
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
