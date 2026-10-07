@@ -161,6 +161,16 @@ docker-compose build
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
 
+A password given with `--password` is visible to other users of the machine (`ps`) and stays in your shell history. For regular use, put the credentials in `.env` (see `.env.example`) or export `NAVIKI_USERNAME` and `NAVIKI_PASSWORD`, then run the script without arguments:
+
+```bash
+export NAVIKI_USERNAME=YourUsername
+read -rs NAVIKI_PASSWORD && export NAVIKI_PASSWORD
+python naviki-gpx-exporter.py
+```
+
+Command-line options win over environment variables, which win over `.env`.
+
 #### Token Cache
 
 After a successful login, the OAuth token is saved to `.naviki-token.json` (mode 600, ignored by Git) next to the script. Later runs with the same username reuse it and skip the login, so a daily sync of ~430 routes takes ~0.8 s (~1.4 s when a login is needed). When Naviki rejects the token (HTTP 401), the script logs in again and refreshes the cache.
@@ -268,12 +278,11 @@ make clean        # Clean up images
 cp .env.example .env
 nano .env  # Add your credentials
 
-# Run
-docker-compose run --rm naviki-exporter \
-  --username "$NAVIKI_USERNAME" \
-  --password "$NAVIKI_PASSWORD" \
-  --output /output
+# Run: .env is mounted read-only and read by the script
+docker compose run --rm naviki-exporter --output /output
 ```
+
+Create `.env` before the first run, otherwise Docker creates an empty `.env` directory in its place. Compose may warn about variables in `.env` (for example a `$` in the password): the file is read as is by the script, so the warning has no effect.
 
 ## 📚 Examples
 
@@ -384,14 +393,14 @@ A cron job or a wrapper script can rely on a non-zero code to raise an alert.
 
 **Standard Python:**
 ```bash
-# Add to crontab (crontab -e)
-0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --username USER --password 'PASS' --output ~/naviki-backup >> ~/naviki.log 2>&1
+# Add to crontab (crontab -e); credentials in /path/to/.env (mode 600)
+0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --output ~/naviki-backup >> ~/naviki.log 2>&1
 ```
 
 **Docker:**
 ```bash
-# Add to crontab (crontab -e)
-0 2 * * * docker run --rm --user $(id -u):$(id -g) -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --token YOUR_TOKEN --output /output >> /var/log/naviki.log 2>&1
+# Add to crontab (crontab -e); credentials in /home/user/naviki.env (mode 600, no quotes)
+0 2 * * * docker run --rm --user $(id -u):$(id -g) --env-file /home/user/naviki.env -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --output /output >> /var/log/naviki.log 2>&1
 ```
 
 #### Example 6: Automated backup on Synology NAS
@@ -426,12 +435,12 @@ docker run --rm \
 | `--username` | `--login` | Yes* | Your Naviki username/login |
 | `--password` | - | Yes* | Your Naviki password |
 | `--token` | - | Yes* | OAuth token (alternative to username/password) |
-| `--output` | `-o` | No | Output directory (default: `/tmp`) |
+| `--output` | `-o` | No | Output directory (default: `./traces`) |
 | `--types` | - | No | Route types to export (default: all) |
 | `--headless` | - | No | Run browser in headless mode (default) |
 | `--visible` | - | No | Show browser during authentication |
 
-*Either `--username`/`--password` OR `--token` is required.
+*Either `--username`/`--password` OR `--token` is required. They can also come from the `NAVIKI_USERNAME`, `NAVIKI_PASSWORD` and `NAVIKI_TOKEN` environment variables, or from `.env`.
 
 ### Route Types
 
@@ -613,17 +622,18 @@ docker run --rm \
 export NAVIKI_USERNAME="MyUsername"
 export NAVIKI_PASSWORD="MyPassword"
 
-# Run without exposing credentials
+# "-e NAME" without a value: docker reads the value from its own
+# environment, so the password never appears on a command line
 docker run --rm \
   --user $(id -u):$(id -g) \
   -e NAVIKI_USERNAME \
   -e NAVIKI_PASSWORD \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
-  --username "$NAVIKI_USERNAME" \
-  --password "$NAVIKI_PASSWORD" \
   --output /output
 ```
+
+`--env-file .env` works too (that is what `make run` does), but docker keeps quotes literally: write `NAVIKI_PASSWORD=secret`, not `NAVIKI_PASSWORD="secret"`.
 
 ### Integration with CI/CD
 
@@ -807,6 +817,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date       | Changes                                                              |
 |---------|------------|----------------------------------------------------------------------|
+| 1.1.1   | 2026-10-07 | Document credentials from environment, fix compose, cron and defaults |
 | 1.1.0   | 2026-10-07 | Add exit codes section                                              |
 | 1.0.1   | 2026-10-07 | Document HTTP login, make Firefox optional, update sync timings      |
 | 1.0.0   | 2026-10-07 | Initialize changelog, document token cache and parallel downloads |
