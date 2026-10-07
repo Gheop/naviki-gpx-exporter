@@ -19,12 +19,6 @@ Usage:
     --headless
 """
 
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options
-from selenium.common.exceptions import TimeoutException, WebDriverException
 import requests
 import time
 import re
@@ -192,6 +186,15 @@ def get_oauth_token_with_selenium(username, password, headless=True):
     Returns:
         Token OAuth d'accès
     """
+    # Import local : Selenium coûte ~140 ms à charger et ne sert plus qu'en
+    # secours du login HTTP
+    from selenium import webdriver
+    from selenium.common.exceptions import TimeoutException, WebDriverException
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.firefox.options import Options
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.support.ui import WebDriverWait
+
     print("🤖 Lancement de l'authentification automatique avec Selenium...")
     print(f"   Username: {username}")
 

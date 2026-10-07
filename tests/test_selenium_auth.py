@@ -17,7 +17,7 @@ import naviki_exporter  # noqa: E402  (chargé par conftest.py)
 class TestSeleniumAuth:
     """Tests pour get_oauth_token_with_selenium avec mocks"""
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_successful_authentication_headless(self, mock_firefox):
         """Test authentification réussie en mode headless"""
         # Setup mock driver
@@ -38,7 +38,7 @@ class TestSeleniumAuth:
         ]
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # Call function
@@ -52,7 +52,7 @@ class TestSeleniumAuth:
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_successful_authentication_visible(self, mock_firefox):
         """Test authentification réussie en mode visible"""
         # Setup mock driver
@@ -73,7 +73,7 @@ class TestSeleniumAuth:
         ]
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # Call function with headless=False
@@ -86,7 +86,7 @@ class TestSeleniumAuth:
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     @patch("naviki_exporter.time.sleep")  # Speed up test
     def test_authentication_timeout(self, mock_sleep, mock_firefox):
         """Test timeout si le token n'apparaît pas"""
@@ -108,7 +108,7 @@ class TestSeleniumAuth:
         mock_submit_button = MagicMock()
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # We need to set up find_element to return different things
@@ -134,7 +134,7 @@ class TestSeleniumAuth:
             mock_driver.quit.assert_called_once()
             mock_driver.save_screenshot.assert_called_once()
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_authentication_with_error_page(self, mock_firefox):
         """Test détection d'erreur de connexion"""
         # Setup mock driver
@@ -154,7 +154,7 @@ class TestSeleniumAuth:
         mock_password_field = MagicMock()
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             def find_element_side_effect(by, value):
@@ -177,7 +177,7 @@ class TestSeleniumAuth:
                 naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_webdriver_exception(self, mock_firefox):
         """Test gestion des erreurs WebDriver"""
         from selenium.common.exceptions import WebDriverException
@@ -193,7 +193,7 @@ class TestSeleniumAuth:
         # Should return None on error
         assert token is None
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_timeout_exception(self, mock_firefox):
         """Test gestion du timeout sur le formulaire"""
         from selenium.common.exceptions import TimeoutException
@@ -206,7 +206,7 @@ class TestSeleniumAuth:
         mock_driver.execute_script.return_value = "token-after-timeout"
 
         # Mock WebDriverWait raising TimeoutException
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.side_effect = TimeoutException(
                 "Form not found"
             )
@@ -222,7 +222,7 @@ class TestSeleniumAuth:
                 naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
 
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     def test_form_submit_fallback(self, mock_firefox):
         """Test soumission du formulaire en fallback"""
         # Setup mock driver
@@ -245,7 +245,7 @@ class TestSeleniumAuth:
         mock_driver.find_element.side_effect = find_element_side_effect
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # Call function

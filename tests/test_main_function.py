@@ -249,7 +249,7 @@ class TestMainFunction:
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("naviki_exporter.webdriver.Firefox")
+    @patch("selenium.webdriver.Firefox")
     @patch("naviki_exporter.time.sleep")
     def test_main_with_username_password(
         self, mock_sleep, mock_firefox, mock_file, mock_path, mock_session
@@ -271,7 +271,7 @@ class TestMainFunction:
         ]
 
         # Mock WebDriverWait
-        with patch("naviki_exporter.WebDriverWait") as mock_wait:
+        with patch("selenium.webdriver.support.ui.WebDriverWait") as mock_wait:
             mock_wait.return_value.until.return_value = mock_username_field
 
             # Setup mock session
