@@ -9,13 +9,51 @@ mesuré.
 Usage : run_scenario.py <exporteur.py> <base_url_mock> -- <arguments du script>
 """
 
+import importlib.abc
 import importlib.util
 import sys
 
 import requests
-from selenium import webdriver
 
 REAL_HOST = "https://www.naviki.org"
+
+
+class _PatchAfterImport(importlib.abc.MetaPathFinder):
+    """Applique patch(module) juste après le premier import de `name`."""
+
+    def __init__(self, name, patch):
+        self.name, self.patch = name, patch
+
+    def find_spec(self, fullname, path, target=None):
+        if fullname != self.name:
+            return None
+        sys.meta_path.remove(self)
+        spec = importlib.util.find_spec(fullname)
+        exec_module = spec.loader.exec_module
+
+        def exec_and_patch(module):
+            exec_module(module)
+            self.patch(module)
+
+        spec.loader.exec_module = exec_and_patch
+        return spec
+
+
+def redirect_firefox_when_imported(base_url):
+    """
+    Redirige Firefox vers le mock sans importer Selenium nous-mêmes : son
+    chargement (~140 ms) doit rester à la charge du script mesuré.
+    """
+
+    def patch(webdriver):
+        original_get = webdriver.Firefox.get
+
+        def get(self, url):
+            return original_get(self, url.replace(REAL_HOST, base_url))
+
+        webdriver.Firefox.get = get
+
+    sys.meta_path.insert(0, _PatchAfterImport("selenium.webdriver", patch))
 
 
 def main():
@@ -31,12 +69,7 @@ def main():
 
     requests.Session.request = request
 
-    original_get = webdriver.Firefox.get
-
-    def get(self, url):
-        return original_get(self, url.replace(REAL_HOST, base_url))
-
-    webdriver.Firefox.get = get
+    redirect_firefox_when_imported(base_url)
 
     spec = importlib.util.spec_from_file_location("exporter", exporter_path)
     exporter = importlib.util.module_from_spec(spec)
