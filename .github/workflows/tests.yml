@@ -3,8 +3,12 @@ name: Tests
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -158,3 +162,12 @@ jobs:
     steps:
     - name: Update badge
       run: echo "Tests passed ✅"
+
+  docker:
+    name: Docker image
+    needs: [lint, test, security]
+    uses: ./.github/workflows/docker.yml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
