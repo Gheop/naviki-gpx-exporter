@@ -23,3 +23,14 @@ def isolated_config_dir(tmp_path, monkeypatch):
     config.mkdir()
     monkeypatch.setenv("NAVIKI_CONFIG_DIR", str(config))
     return config
+
+
+@pytest.fixture(autouse=True)
+def no_network_login(request, monkeypatch):
+    """
+    Le login HTTP partirait sur le vrai naviki.org : par défaut il échoue,
+    et main() retombe sur Selenium, que les tests simulent déjà.
+    Les tests marqués http_login gardent la vraie fonction.
+    """
+    if request.node.get_closest_marker("http_login") is None:
+        monkeypatch.setattr(_module, "get_oauth_token_http", lambda u, p: None)

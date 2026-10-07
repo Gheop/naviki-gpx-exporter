@@ -17,3 +17,4 @@ include = ["naviki_gpx_exporter*"]
 [tool.pytest.ini_options]
 addopts = "-q --disable-warnings"
 testpaths = ["tests"]
+markers = ["http_login: utilise la vraie fonction de login HTTP"]

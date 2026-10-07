@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script pour télécharger automatiquement les traces GPX depuis Naviki
-Utilise Selenium pour une authentification 100% automatique
+Authentification automatique : login HTTP direct, Selenium (Firefox) en secours
 
 Installation requise:
   pip install selenium requests beautifulsoup4
@@ -34,6 +34,7 @@ import json
 import sys
 import os
 import threading
+from urllib.parse import parse_qs, urlparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -115,6 +116,69 @@ def save_credentials_to_env(username, password):
     print("🔒 Permissions définies à 600 " "(lecture/écriture uniquement pour vous)")
 
 
+OAUTH_REDIRECT_URI = (
+    "https://www.naviki.org/fr/naviki/single-pages/loading//mobile.html"
+)
+OAUTH_SCOPE = "way,profile,contest"
+OAUTH_URL = (
+    "https://www.naviki.org/oauth2/auth?lang=fr"
+    f"&redirect_uri={OAUTH_REDIRECT_URI}&client_id=web"
+    f"&scope={OAUTH_SCOPE}&response_type=code"
+)
+AJAX_DISPATCHER_URL = "https://www.naviki.org/fr/naviki/ajax-dispatcher/"
+
+
+def get_oauth_token_http(username, password):
+    """
+    Login OAuth sans navigateur (~0,5 s, contre ~6 s avec Firefox).
+
+    Refait ce que fait le site : le formulaire se poste sur sa propre URL,
+    le serveur redirige vers mobile.html?code=..., puis le JavaScript de
+    cette page échange le code via l'action FeUser/feSession.
+
+    Returns:
+        Le token d'accès, ou None si une étape échoue (identifiants refusés,
+        site modifié) : l'appelant retombe alors sur Selenium.
+    """
+    session = requests.Session()
+    try:
+        session.get(OAUTH_URL, timeout=30)
+        login = session.post(
+            OAUTH_URL,
+            data={
+                "username": username,
+                "password": password,
+                "scope": OAUTH_SCOPE,
+                "response_type": "code",
+                "redirect_uri": OAUTH_REDIRECT_URI,
+                "client_id": "web",
+            },
+            allow_redirects=False,
+            timeout=30,
+        )
+        location = urlparse(login.headers.get("Location", ""))
+        code = parse_qs(location.query).get("code", [None])[0]
+        if not code:
+            return None
+        exchange = session.get(
+            AJAX_DISPATCHER_URL,
+            params={
+                "request[format]": "json",
+                "request[controller]": "FeUser",
+                "request[action]": "feSession",
+                "request[arguments][code]": code,
+            },
+            timeout=30,
+        )
+        data = exchange.json()
+    except (requests.RequestException, ValueError):
+        return None
+
+    if isinstance(data, dict) and data.get("status") and data.get("accessToken"):
+        return data["accessToken"]
+    return None
+
+
 def get_oauth_token_with_selenium(username, password, headless=True):
     """
     Utilise Selenium pour se connecter à Naviki et récupérer le token
@@ -154,14 +218,7 @@ def get_oauth_token_with_selenium(username, password, headless=True):
 
         # Étape 1: Aller sur la page OAuth2
         print("\n📋 Étape 1: Chargement de la page de connexion OAuth2...")
-        oauth_url = (
-            "https://www.naviki.org/oauth2/auth?lang=fr"
-            "&redirect_uri=https://www.naviki.org/fr/naviki/"
-            "single-pages/loading//mobile.html&client_id=web"
-            "&scope=way,profile,contest&response_type=code"
-        )
-
-        driver.get(oauth_url)
+        driver.get(OAUTH_URL)
         print("   ✓ Page chargée")
 
         # Étape 2: Remplir le formulaire de connexion
@@ -502,10 +559,21 @@ def save_cached_token(username, token):
 
 
 def login_or_exit(args):
-    """Connexion Selenium ; quitte le programme si aucun token n'est obtenu."""
-    oauth_token = get_oauth_token_with_selenium(
-        args.username, args.password, headless=args.headless
-    )
+    """Login HTTP, puis Selenium en secours ; quitte si aucun token n'est obtenu."""
+    oauth_token = None
+    # --visible : l'utilisateur veut voir le navigateur, on passe par Firefox
+    if not args.visible:
+        print("🔑 Connexion directe à Naviki...")
+        oauth_token = get_oauth_token_http(args.username, args.password)
+        if oauth_token:
+            print("✅ Authentification réussie, sans navigateur")
+        else:
+            print("⚠️  Connexion directe impossible, nouvel essai avec Firefox")
+
+    if not oauth_token:
+        oauth_token = get_oauth_token_with_selenium(
+            args.username, args.password, headless=args.headless
+        )
 
     if not oauth_token:
         print("\n❌ Impossible de récupérer le token")
