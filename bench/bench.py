@@ -7,8 +7,9 @@ Le script de la variante est copié dans un dossier isolé, sans .env, pour que
 les identifiants locaux n'influencent pas la mesure.
 
 Scénarios :
-  incremental  login Selenium + pagination, 431 traces déjà présentes
+  incremental  identifiants + pagination, 431 traces déjà présentes
   full         --token, dossier vide, 431 téléchargements
+  login        comme incremental, cache du token supprimé avant chaque run
 
 Usage :
   python bench/bench.py --scenario full --runs 10 HEAD WORKTREE
@@ -113,7 +114,9 @@ def paired_delta(base_runs, cand_runs, key, resamples=5000):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("variants", nargs="+")
-    parser.add_argument("--scenario", choices=["incremental", "full"], required=True)
+    parser.add_argument(
+        "--scenario", choices=["incremental", "full", "login"], required=True
+    )
     parser.add_argument("--runs", type=int, default=10)
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--json")
@@ -126,7 +129,7 @@ def main():
 
     with MockNaviki() as mock:
         prefilled = work / "prefilled"
-        if args.scenario == "incremental":
+        if args.scenario in ("incremental", "login"):
             prefilled.mkdir()
             run_once(
                 scripts[args.variants[0]],
@@ -135,7 +138,7 @@ def main():
             )
 
         def script_args(out):
-            if args.scenario == "incremental":
+            if args.scenario in ("incremental", "login"):
                 return [
                     "--username",
                     "bench",
@@ -152,6 +155,8 @@ def main():
             for v in order:
                 out = work / f"out-{v.replace('/', '_')}"
                 shutil.rmtree(out, ignore_errors=True)
+                if args.scenario == "login":
+                    (scripts[v].parent / ".naviki-token.json").unlink(missing_ok=True)
                 out.mkdir()
                 metrics = run_once(scripts[v], mock.base_url, script_args(out))
                 if args.scenario == "full":
