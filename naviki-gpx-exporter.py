@@ -363,6 +363,11 @@ def wait_browser_closed():
         _browser_closer.join()
 
 
+# Variables lues dans l'environnement, prioritaires sur le .env : elles évitent
+# de passer le mot de passe en argument, visible dans ps et l'historique
+CREDENTIAL_VARS = ("NAVIKI_USERNAME", "NAVIKI_PASSWORD", "NAVIKI_TOKEN")
+
+
 def parse_arguments():
     """Parse les arguments de ligne de commande"""
     parser = argparse.ArgumentParser(
@@ -384,8 +389,11 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
         """,
     )
 
-    # Charger les variables d'environnement depuis .env
+    # Valeurs par défaut : .env, puis variables d'environnement
     env_vars = load_env_file()
+    env_vars.update(
+        {name: os.environ[name] for name in CREDENTIAL_VARS if os.environ.get(name)}
+    )
 
     auth_group = parser.add_mutually_exclusive_group(required=False)
     auth_group.add_argument(
@@ -444,7 +452,7 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
     if not args.token and not args.username:
         parser.error(
             "Vous devez fournir soit --token, soit --username/--password, "
-            "ou avoir des identifiants sauvegardés dans .env"
+            "ou définir NAVIKI_USERNAME/NAVIKI_PASSWORD (environnement ou .env)"
         )
 
     # Validation: si username est fourni, password est requis
@@ -459,7 +467,7 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
     if env_vars.get("NAVIKI_USERNAME") and not any(
         arg in sys.argv for arg in ["--username", "--login", "--token"]
     ):
-        print("🔑 Utilisation des identifiants depuis .env")
+        print("🔑 Utilisation des identifiants de l'environnement ou de .env")
 
     return args
 

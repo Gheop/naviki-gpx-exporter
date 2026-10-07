@@ -8,6 +8,7 @@ import os
 import sys
 
 import pytest
+from unittest.mock import patch
 
 # Add parent directory to path to import the main script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -188,3 +189,39 @@ class TestParseArguments:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestEnvironmentCredentials:
+    """Identifiants depuis l'environnement, sans les passer en argument"""
+
+    def parse(self, argv):
+        # module partagé chargé par conftest.py, pas la copie privée du fichier
+        exporter = sys.modules["naviki_exporter"]
+        with patch("sys.argv", ["prog", *argv]):
+            return exporter.parse_arguments()
+
+    def test_environment_provides_credentials(self, monkeypatch):
+        monkeypatch.setenv("NAVIKI_USERNAME", "alice")
+        monkeypatch.setenv("NAVIKI_PASSWORD", "s3cret")
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("alice", "s3cret")
+
+    def test_command_line_wins_over_environment(self, monkeypatch):
+        monkeypatch.setenv("NAVIKI_USERNAME", "alice")
+        monkeypatch.setenv("NAVIKI_PASSWORD", "s3cret")
+
+        args = self.parse(["--username", "bob", "--password", "pw"])
+
+        assert (args.username, args.password) == ("bob", "pw")
+
+    def test_environment_wins_over_env_file(self, monkeypatch, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text(
+            "NAVIKI_USERNAME=from_file\nNAVIKI_PASSWORD=file_pw\n"
+        )
+        monkeypatch.setenv("NAVIKI_PASSWORD", "env_pw")
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("from_file", "env_pw")
