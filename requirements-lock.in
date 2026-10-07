@@ -1,0 +1,3 @@
+# Entrée de pip-compile pour requirements-lock.txt, le lock de l'image Docker
+# (Linux, Python 3.13). Dependabot régénère le lock à partir de ce fichier.
+-r requirements.txt

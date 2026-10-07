@@ -1,5 +1,5 @@
-# Dépendances directes. L'image Docker installe requirements.lock, généré
-# depuis ce fichier (voir l'en-tête du lock pour la commande).
+# Dépendances directes, bornées. L'image Docker installe requirements-lock.txt,
+# généré depuis requirements-lock.in par pip-compile (Dependabot le maintient).
 selenium>=4.10,<5
 # 2.32.4 corrige CVE-2024-47081 (fuite d'identifiants .netrc)
 requests>=2.32.4,<3
