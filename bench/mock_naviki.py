@@ -1,11 +1,12 @@
 """
 Faux serveur Naviki pour les benchmarks.
 
-Latences et tailles calibrées sur l'API réelle (bench/JOURNAL.md, mesure du
-2026-10-07) : pages de 20 trajets en 77 ms, GPX de 80 à 330 Ko en 450 ms,
-token posé dans localStorage 400 ms après la soumission du formulaire.
-Chaque requête dort indépendamment : le serveur suppose que la latence réelle
-ne dépend pas de la concurrence, hypothèse à valider sur la vraie API.
+Latences et tailles calibrées sur l'API réelle (bench/JOURNAL.md, mesures du
+2026-10-07) : liste en ~60 ms + 0,9 ms par trajet (20 par défaut, `limit`
+respecté), GPX de 80 à 330 Ko en 450 ms, token posé dans localStorage 400 ms
+après la soumission du formulaire, échange du code (feSession) en 370 ms.
+Chaque requête dort indépendamment ; la vraie API a confirmé tenir 4 requêtes
+simultanées sans hausse de latence.
 """
 
 import json
@@ -17,7 +18,11 @@ from urllib.parse import parse_qs, urlparse
 
 WAY_COUNT = 431
 PAGE_SIZE = 20
-LIST_LATENCY_S = 0.077
+LIST_BASE_LATENCY_S = 0.06
+LIST_PER_WAY_S = 0.0009
+FESESSION_LATENCY_S = 0.37
+CODE = "mock-code-0000"
+MOBILE_PATH = "/fr/naviki/single-pages/loading//mobile.html"
 DOWNLOAD_LATENCY_S = 0.45
 OAUTH_PAGE_LATENCY_S = 0.3
 TOKEN_DELAY_MS = 400
@@ -68,7 +73,7 @@ def gpx_body(size):
 
 
 OAUTH_PAGE = b"""<!doctype html><html><body>
-<form method="post" action="/oauth2/login">
+<form method="post">
 <input name="username"><input name="password" type="password">
 <input type="submit" value="Connexion">
 </form></body></html>"""
@@ -106,15 +111,29 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, OAUTH_PAGE, "text/html; charset=UTF-8")
         if url.path.endswith("mobile.html"):
             return self._send(200, MOBILE_PAGE, "text/html; charset=UTF-8")
+        if url.path == "/fr/naviki/ajax-dispatcher/":
+            time.sleep(FESESSION_LATENCY_S)
+            query = parse_qs(url.query)
+            ok = query.get("request[action]") == ["feSession"] and query.get(
+                "request[arguments][code]"
+            ) == [CODE]
+            body = {"status": ok}
+            if ok:
+                body.update(
+                    accessToken=TOKEN, refreshToken="mock-rt", feUserId=1, username="b"
+                )
+            return self._send(200, json.dumps(body).encode(), "application/json")
         if url.path == "/naviki/api/v6/Way/2/findUserWaysByFilter/":
-            time.sleep(LIST_LATENCY_S)
-            if self.headers.get("Authorization") != f"Bearer {TOKEN}":
-                return self._send(401, b"{}", "application/json")
-            offset = int(parse_qs(url.query).get("offset", ["0"])[0])
+            query = parse_qs(url.query)
+            offset = int(query.get("offset", ["0"])[0])
+            limit = int(query.get("limit", [str(PAGE_SIZE)])[0])
             page = [
                 {k: v for k, v in w.items() if k != "gpx_size"}
-                for w in WAYS[offset : offset + PAGE_SIZE]
+                for w in WAYS[offset : offset + limit]
             ]
+            time.sleep(LIST_BASE_LATENCY_S + LIST_PER_WAY_S * len(page))
+            if self.headers.get("Authorization") != f"Bearer {TOKEN}":
+                return self._send(401, b"{}", "application/json")
             return self._send(
                 200, json.dumps({"ways": page}).encode(), "application/json"
             )
@@ -123,12 +142,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
         form = parse_qs(self.rfile.read(length).decode())
-        if self.path == "/oauth2/login":
+        if self.path.startswith("/oauth2/auth"):
+            # comme le vrai serveur : le formulaire se poste sur sa propre URL
+            if form.get("password") == ["wrong"]:
+                return self._send(200, OAUTH_PAGE, "text/html; charset=UTF-8")
             return self._send(
                 302,
                 b"",
                 "text/html",
-                {"Location": "/fr/naviki/single-pages/loading//mobile.html"},
+                {"Location": f"{MOBILE_PATH}?code={CODE}"},
             )
         if self.path == "/naviki/api/v6/Util/wayToFileWithUser/":
             time.sleep(DOWNLOAD_LATENCY_S)
