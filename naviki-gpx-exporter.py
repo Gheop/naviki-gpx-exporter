@@ -35,6 +35,16 @@ import os
 from datetime import datetime, timezone
 
 
+def config_dir():
+    """
+    Dossier contenant .env, surchargeable par NAVIKI_CONFIG_DIR
+    (tests, ou volume persistant sous Docker)
+    """
+    return pathlib.Path(
+        os.environ.get("NAVIKI_CONFIG_DIR", pathlib.Path(__file__).parent)
+    )
+
+
 def load_env_file():
     """
     Charge les variables d'environnement depuis le fichier .env
@@ -43,7 +53,7 @@ def load_env_file():
         dict: Dictionnaire contenant les variables d'environnement
     """
     env_vars = {}
-    env_path = pathlib.Path(__file__).parent / ".env"
+    env_path = config_dir() / ".env"
 
     if env_path.exists():
         with open(env_path, "r", encoding="utf-8") as f:
@@ -67,7 +77,7 @@ def save_credentials_to_env(username, password):
         username: Nom d'utilisateur Naviki
         password: Mot de passe Naviki
     """
-    env_path = pathlib.Path(__file__).parent / ".env"
+    env_path = config_dir() / ".env"
 
     # Lire le contenu existant pour préserver les autres variables
     existing_content = {}
@@ -432,7 +442,7 @@ def main():
         # Proposer de sauvegarder les identifiants après authentification réussie
         # Ne demander que si on n'est pas en mode test (stdin est disponible)
         if credentials_used_from_args and not args.save_credentials:
-            env_path = pathlib.Path(__file__).parent / ".env"
+            env_path = config_dir() / ".env"
             # Ne proposer que si le fichier n'existe pas déjà avec ces identifiants
             env_vars = load_env_file()
             should_ask = (
