@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   naviki-exporter:
     build:
@@ -8,7 +6,8 @@ services:
     image: naviki-gpx-exporter:latest
     container_name: naviki-exporter
     
-    # Variables d'environnement (optionnel, peut être passé en ligne de commande)
+    # Identifiants lus par le script dans l'environnement (valeurs prises
+    # dans le shell ou dans un .env à côté de ce fichier)
     environment:
       - NAVIKI_USERNAME=${NAVIKI_USERNAME}
       - NAVIKI_PASSWORD=${NAVIKI_PASSWORD}
@@ -18,18 +17,19 @@ services:
       - ./output:/output
     
     # Commande par défaut (à surcharger au lancement)
-    # Exemple: docker-compose run naviki-exporter --username user --password pass --output /output
+    # Exemple: docker compose run --rm naviki-exporter --output /output
     command: ["--help"]
     
     # Pas de restart automatique pour un script one-shot
     restart: "no"
     
-    # Limites de ressources (optionnel)
+    # Limites de ressources (optionnel). Le repli Firefox, utilisé si le
+    # login HTTP échoue, atteint ~580 Mo : 512M provoquait un OOM kill
     deploy:
       resources:
         limits:
           cpus: '1'
-          memory: 512M
+          memory: 1G
         reservations:
           cpus: '0.5'
           memory: 256M
