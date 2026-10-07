@@ -3,6 +3,7 @@ Tests du cache de token : Firefox n'est lancé que si le cache manque ou expire
 """
 
 import json
+import os
 import stat
 from unittest.mock import MagicMock, patch
 
@@ -71,7 +72,9 @@ def test_login_writes_private_cache(tmp_path, isolated_config_dir):
 
     path = isolated_config_dir / CACHE
     assert json.loads(path.read_text())["token"] == "fresh-token"
-    assert stat.S_IMODE(path.stat().st_mode) == 0o600
+    # Windows ignore les droits POSIX : chmod n'y règle que la lecture seule
+    if os.name != "nt":
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
 
 
 def test_failed_login_writes_no_cache(tmp_path, isolated_config_dir):

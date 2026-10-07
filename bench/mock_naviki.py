@@ -78,11 +78,13 @@ OAUTH_PAGE = b"""<!doctype html><html><body>
 <input type="submit" value="Connexion">
 </form></body></html>"""
 
+SET_TOKEN_JS = (
+    f"setTimeout(function(){{localStorage.setItem('_n_a_at','{TOKEN}');}}, "
+    f"{TOKEN_DELAY_MS});"
+)
 MOBILE_PAGE = (
-    """<!doctype html><html><body>Chargement
-<script>setTimeout(function(){localStorage.setItem('_n_a_at','%s');}, %d);</script>
-</body></html>"""
-    % (TOKEN, TOKEN_DELAY_MS)
+    "<!doctype html><html><body>Chargement"
+    f"<script>{SET_TOKEN_JS}</script></body></html>"
 ).encode()
 
 
