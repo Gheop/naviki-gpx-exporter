@@ -2,18 +2,9 @@
 Tests du téléchargement parallèle : mêmes résultats que l'ancien mode séquentiel
 """
 
-import importlib.util
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-spec = importlib.util.spec_from_file_location(
-    "naviki_exporter", os.path.join(ROOT, "naviki-gpx-exporter.py")
-)
-naviki_exporter = importlib.util.module_from_spec(spec)
-sys.modules["naviki_exporter"] = naviki_exporter
-spec.loader.exec_module(naviki_exporter)
+import naviki_exporter  # noqa: E402  (chargé par conftest.py)
 
 SAME_MINUTE = "16/10/2025, 07:20"
 

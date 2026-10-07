@@ -4,26 +4,14 @@ Tests pour la fonction main et la logique de téléchargement
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock, mock_open, call
+from unittest.mock import patch, MagicMock, mock_open
 import sys
 import os
-from pathlib import Path
 
 # Import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import importlib.util
-
-spec = importlib.util.spec_from_file_location(
-    "naviki_exporter",
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "naviki-gpx-exporter.py",
-    ),
-)
-naviki_exporter = importlib.util.module_from_spec(spec)
-sys.modules["naviki_exporter"] = naviki_exporter
-spec.loader.exec_module(naviki_exporter)
+import naviki_exporter  # noqa: E402  (chargé par conftest.py)
 
 
 class TestMainFunction:

@@ -4,26 +4,14 @@ Tests pour l'authentification Selenium avec mocks
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch, MagicMock
 import sys
 import os
 
 # Import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import importlib.util
-
-spec = importlib.util.spec_from_file_location(
-    "naviki_exporter",
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "naviki-gpx-exporter.py",
-    ),
-)
-naviki_exporter = importlib.util.module_from_spec(spec)
-# Register in sys.modules so patches can find it
-sys.modules["naviki_exporter"] = naviki_exporter
-spec.loader.exec_module(naviki_exporter)
+import naviki_exporter  # noqa: E402  (chargé par conftest.py)
 
 
 class TestSeleniumAuth:
