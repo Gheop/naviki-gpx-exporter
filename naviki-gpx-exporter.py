@@ -519,6 +519,43 @@ def date_from_title(title):
     return None
 
 
+def gpx_filename(way, parts):
+    """
+    Nom du fichier GPX d'un trajet. C'est la clé de déduplication de
+    l'archive : un changement ici fait retélécharger les trajets concernés.
+
+    Args:
+        way: trajet renvoyé par l'API (title, crdate)
+        parts: date lue dans le titre (cf. date_from_title), ou None pour
+            se rabattre sur crdate
+
+    Returns:
+        Le nom du fichier, ou None si aucune date n'est disponible.
+    """
+    if parts is None:
+        if "crdate" not in way:
+            return None
+        # crdate est un timestamp UTC
+        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
+        # Titre nettoyé en suffixe s'il apporte quelque chose
+        title = way["title"]
+        safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
+        if len(safe_title) > 3 and safe_title != title:
+            return f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_{safe_title}.gpx"
+        return dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
+
+    year, month, day = parts["year"], parts["month"], parts["day"]
+    hour, minute = parts.get("hour"), parts.get("minute")
+    if hour and minute:
+        return f"{year}-{month}-{day}_{hour}-{minute}_Naviki.gpx"
+    # Pas d'heure dans le titre (ex. format compact 20241124) : l'heure vient
+    # de crdate
+    if "crdate" in way:
+        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
+        return f"{year}-{month}-{day}_{dt.strftime('%H-%M')}_UTC_Naviki.gpx"
+    return f"{year}-{month}-{day}_Naviki.gpx"
+
+
 # (connexion, lecture) en secondes : sans timeout, requests attend
 # indéfiniment une réponse qui ne vient pas. Le GPX le plus lent mesuré
 # prend 0,6 s.
@@ -768,7 +805,6 @@ def main():
                 parts = date_from_title(title)
 
                 if parts is None:
-                    # Fallback: use crdate timestamp with timezone awareness
                     # Check if title looks like a place name
                     # (contains letters/spaces)
                     if any(c.isalpha() for c in title) and not any(
@@ -784,44 +820,11 @@ def main():
                             f"'{title}', utilisation de crdate"
                         )
 
-                    if "crdate" in way:
-                        # Use timezone-aware datetime
-                        # (crdate is UTC timestamp)
-                        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                        # Use sanitized title as prefix if it's short
-                        # and has no special chars
-                        safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
-                        if len(safe_title) > 3 and safe_title != title:
-                            new_title = (
-                                f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_"
-                                f"{safe_title}.gpx"
-                            )
-                        else:
-                            new_title = (
-                                dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
-                            )
-                    else:
-                        print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
-                        error_count += 1
-                        continue
-                else:
-                    year, month, day = parts["year"], parts["month"], parts["day"]
-                    hour, minute = parts.get("hour"), parts.get("minute")
-                    if hour and minute:
-                        new_title = (
-                            f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
-                        )
-                    else:
-                        # Pas d'heure dans le titre (ex. format compact 20241124) :
-                        # l'heure vient de crdate
-                        if "crdate" in way:
-                            dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                            time_str = dt.strftime("%H-%M")
-                            new_title = (
-                                f"{year}-{month}-{day}_{time_str}_UTC_" "Naviki.gpx"
-                            )
-                        else:
-                            new_title = f"{year}-{month}-{day}_Naviki.gpx"
+                new_title = gpx_filename(way, parts)
+                if new_title is None:
+                    print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
+                    error_count += 1
+                    continue
 
                 # Check if file already exists
                 save_path = output_dir.joinpath(new_title)
