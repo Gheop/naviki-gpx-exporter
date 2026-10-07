@@ -22,6 +22,8 @@ jobs:
       uses: actions/setup-python@v7
       with:
         python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     # Mêmes outils et mêmes versions que le hook local
     - name: Lint and format check (pre-commit)
@@ -55,6 +57,8 @@ jobs:
       uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     - name: Install dependencies
       run: |
@@ -90,6 +94,8 @@ jobs:
       uses: actions/setup-python@v7
       with:
         python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     - name: Install pip-audit
       run: |
@@ -112,6 +118,8 @@ jobs:
       uses: actions/setup-python@v7
       with:
         python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     - name: Install dependencies
       run: |
