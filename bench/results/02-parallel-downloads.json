@@ -1,0 +1,28 @@
+{
+  "scenario": "full",
+  "note": "mesure arrêtée à 4 paires (run 0 = warmup inclus) à la demande : écart 4x, CV < 0,1 %; RSS/CPU non relevés",
+  "wall_s": {
+    "HEAD": [
+      197.17,
+      196.97,
+      196.83,
+      196.86
+    ],
+    "WORKTREE": [
+      49.3,
+      49.39,
+      49.16,
+      49.13
+    ]
+  },
+  "median_s": {
+    "HEAD": 196.91500000000002,
+    "WORKTREE": 49.23
+  },
+  "delta_pct": [
+    -75.0,
+    -74.93,
+    -75.02,
+    -75.04
+  ]
+}

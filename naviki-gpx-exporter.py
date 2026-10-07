@@ -32,6 +32,7 @@ import pathlib
 import argparse
 import sys
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
 
@@ -408,6 +409,46 @@ patterns = [
 ]
 
 
+# Téléchargements simultanés : ~4x plus rapide sur un export complet,
+# sans charger davantage le serveur Naviki
+DOWNLOAD_WORKERS = 4
+
+
+def log(message):
+    """print() en une seule écriture, pour ne pas mêler les lignes des threads"""
+    sys.stdout.write(f"{message}\n")
+
+
+def download_gpx(session, oauth_token, uuid, save_path):
+    """Télécharge un GPX dans save_path ; renvoie True si le fichier est écrit."""
+    form_data = {
+        "wayUuid": uuid,
+        "oauth_token": oauth_token,
+        "format": "gpx",
+    }
+    dl_headers = {"Authorization": None}  # token is passed in form data
+
+    try:
+        dl = session.post(
+            "https://www.naviki.org/naviki/api/v6/Util/" "wayToFileWithUser/",
+            data=form_data,
+            headers=dl_headers,
+        )
+
+        if not dl.text.startswith("<?xml"):
+            log(f"❌ Échec du téléchargement GPX (réponse invalide): {save_path.name}")
+            return False
+
+        with open(save_path, "wb") as f:
+            f.write(dl.text.encode())
+        log(f"✅ Sauvegardé: {save_path}")
+        return True
+
+    except Exception as e:
+        log(f"❌ Erreur lors du téléchargement de {save_path.name}: {e}")
+        return False
+
+
 def main():
     # Parse arguments
     args = parse_arguments()
@@ -499,6 +540,12 @@ def main():
     success_count = 0
     error_count = 0
     skipped_count = 0
+
+    # Les téléchargements partent pendant que la pagination continue
+    pool = ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS)
+    downloads = []
+    in_flight = set()
+    deferred = []
 
     while more_to_download:
         r = s.get(
@@ -604,35 +651,25 @@ def main():
                 skipped_count += 1
                 continue
 
-            # Download GPX
-            form_data = {
-                "wayUuid": uuid,
-                "oauth_token": oauth_token,
-                "format": "gpx",
-            }
-            dl_headers = {"Authorization": None}  # token is passed in form data
-
-            try:
-                dl = s.post(
-                    "https://www.naviki.org/naviki/api/v6/Util/" "wayToFileWithUser/",
-                    data=form_data,
-                    headers=dl_headers,
-                )
-
-                if not dl.text.startswith("<?xml"):
-                    print("❌ Échec du téléchargement GPX " "(réponse invalide)")
-                    error_count += 1
-                    continue
-
-                with open(save_path, "wb") as f:
-                    f.write(dl.text.encode())
-                print(f"✅ Sauvegardé: {save_path}")
-                success_count += 1
-
-            except Exception as e:
-                print(f"❌ Erreur lors du téléchargement: {e}")
-                error_count += 1
+            # Un fichier du même nom en cours de téléchargement serait écrasé :
+            # on le traite après le pool, comme le ferait le mode séquentiel
+            if save_path in in_flight:
+                deferred.append((uuid, save_path))
                 continue
+
+            in_flight.add(save_path)
+            downloads.append(pool.submit(download_gpx, s, oauth_token, uuid, save_path))
+
+    pool.shutdown(wait=True)
+    results = [f.result() for f in downloads]
+    for uuid, save_path in deferred:
+        if save_path.exists():
+            print(f"⏭️  Déjà présent, ignoré: {save_path.name}")
+            skipped_count += 1
+        else:
+            results.append(download_gpx(s, oauth_token, uuid, save_path))
+    success_count += results.count(True)
+    error_count += results.count(False)
 
     print(f"\n{'='*50}")
     print("Téléchargement terminé!")
