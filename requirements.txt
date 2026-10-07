@@ -1,3 +1,5 @@
-selenium>=4.0.0
-requests>=2.28.0
-beautifulsoup4>=4.11.0
+# Dépendances directes. L'image Docker installe requirements.lock, généré
+# depuis ce fichier (voir l'en-tête du lock pour la commande).
+selenium>=4.10,<5
+# 2.32.4 corrige CVE-2024-47081 (fuite d'identifiants .netrc)
+requests>=2.32.4,<3

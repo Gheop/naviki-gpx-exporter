@@ -7,6 +7,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 import sys
 import os
+import tempfile
 
 # Import the module
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,7 +19,7 @@ class TestSeleniumAuth:
     """Tests pour get_oauth_token_with_selenium avec mocks"""
 
     @patch("selenium.webdriver.Firefox")
-    def test_successful_authentication_headless(self, mock_firefox):
+    def test_successful_authentication_headless(self, mock_firefox, capsys):
         """Test authentification réussie en mode headless"""
         # Setup mock driver
         mock_driver = MagicMock()
@@ -48,6 +49,7 @@ class TestSeleniumAuth:
 
             # Assertions
             assert token == "test-token-12345"
+            assert "test-token" not in capsys.readouterr().out
             mock_firefox.assert_called_once()
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
@@ -133,6 +135,10 @@ class TestSeleniumAuth:
             naviki_exporter.wait_browser_closed()
             mock_driver.quit.assert_called_once()
             mock_driver.save_screenshot.assert_called_once()
+            shot = mock_driver.save_screenshot.call_args.args[0]
+            assert os.path.basename(shot).startswith("naviki_debug_")
+            assert os.path.dirname(shot) == tempfile.gettempdir()
+            os.remove(shot)
 
     @patch("selenium.webdriver.Firefox")
     def test_authentication_with_error_page(self, mock_firefox):

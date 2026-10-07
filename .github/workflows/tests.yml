@@ -3,8 +3,12 @@ name: Tests
 on:
   push:
     branches: [ main, develop ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -12,32 +16,20 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
-        python-version: '3.10'
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
-    - name: Install dependencies
+    # Mêmes outils et mêmes versions que le hook local
+    - name: Lint and format check (pre-commit)
       run: |
-        python -m pip install --upgrade pip
-        pip install flake8 black pylint
-    
-    - name: Lint with flake8
-      run: |
-        # Stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # Exit-zero treats all errors as warnings
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    
-    - name: Check code formatting with black
-      run: |
-        black --check --diff .
-    
-    - name: Analyze with pylint
-      run: |
-        pylint naviki-gpx-exporter.py --disable=C0111,R0913 || true
+        python -m pip install --upgrade pip pre-commit
+        pre-commit run --all-files --show-diff-on-failure
 
   test:
     name: Unit Tests
@@ -45,21 +37,28 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ['3.9', '3.10', '3.11']  # Retiré 3.7
+        python-version: ['3.11', '3.12', '3.13', '3.14']
+        # Toutes les versions sur Linux ; la plus ancienne et la plus
+        # récente seulement sur Windows et macOS
         exclude:
-          # Exclude some combinations to speed up CI
           - os: windows-latest
-            python-version: '3.8'  # Optionnel
+            python-version: '3.12'
+          - os: windows-latest
+            python-version: '3.13'
           - os: macos-latest
-            python-version: '3.8'  # Optionnel
+            python-version: '3.12'
+          - os: macos-latest
+            python-version: '3.13'
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     - name: Install dependencies
       run: |
@@ -67,64 +66,60 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov
         pip install -r requirements-dev.txt
-        pip install -e .
     
     - name: Run unit tests
       run: |
         pytest tests/ --cov=. --cov-report=xml --cov-report=term
 
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v7
       with:
         files: coverage.xml
-        flags: ${{ matrix.os }}-py${{ matrix.python }}
-        name: ${{ matrix.os }}-py${{ matrix.python }}
+        flags: ${{ matrix.os }}-py${{ matrix.python-version }}
+        name: ${{ matrix.os }}-py${{ matrix.python-version }}
         token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: true
+        # Une PR venant d'un fork n'a pas accès au secret CODECOV_TOKEN
+        fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
-    # - name: Upload coverage to Codecov
-    #   if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     file: ./coverage.xml
-    #     fail_ci_if_error: false
 
   security:
     name: Security Check
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
-        python-version: '3.10'
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
-    - name: Install dependencies
+    - name: Install pip-audit
       run: |
-        python -m pip install --upgrade pip
-        pip install pip-audit safety
-    
+        python -m pip install --upgrade pip pip-audit
+
+    # Audite les dépendances du projet (pas l'environnement du runner) et
+    # échoue sur toute vulnérabilité connue
     - name: Run pip-audit
       run: |
-        pip-audit --desc || true
-    
-    - name: Run safety check
-      run: |
-        safety check --json || true
+        pip-audit -r requirements.txt --strict --desc
+        pip-audit -r requirements.lock --require-hashes --strict --desc
 
   integration:
     name: Integration Tests (Mocked)
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v7
       with:
-        python-version: '3.10'
+        python-version: '3.13'
+        cache: pip
+        cache-dependency-path: requirements*.txt
     
     - name: Install dependencies
       run: |
@@ -139,10 +134,7 @@ jobs:
     - name: Test help command
       run: |
         python naviki-gpx-exporter.py --help
-    
-    - name: Test with invalid token (should fail gracefully)
-      run: |
-        python naviki-gpx-exporter.py --token invalid-token-test --output /tmp || echo "Expected failure"
+
 
   build-badge:
     name: Update Badge
@@ -153,3 +145,12 @@ jobs:
     steps:
     - name: Update badge
       run: echo "Tests passed ✅"
+
+  docker:
+    name: Docker image
+    needs: [lint, test, security]
+    uses: ./.github/workflows/docker.yml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write

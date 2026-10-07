@@ -4,7 +4,7 @@ Script pour télécharger automatiquement les traces GPX depuis Naviki
 Authentification automatique : login HTTP direct, Selenium (Firefox) en secours
 
 Installation requise:
-  pip install selenium requests beautifulsoup4
+  pip install selenium requests
 
 Installation du driver Firefox (geckodriver):
   - Ubuntu/Debian: sudo apt install firefox-geckodriver
@@ -27,6 +27,7 @@ import argparse
 import json
 import sys
 import os
+import tempfile
 import threading
 from urllib.parse import parse_qs, urlparse
 from concurrent.futures import ThreadPoolExecutor
@@ -62,7 +63,12 @@ def load_env_file():
                     # Gérer les lignes de type KEY=value
                     if "=" in line:
                         key, value = line.split("=", 1)
-                        env_vars[key.strip()] = value.strip()
+                        value = value.strip()
+                        # KEY="valeur" : guillemets retirés, comme le font
+                        # la plupart des outils .env
+                        if len(value) >= 2 and value[0] == value[-1] in "\"'":
+                            value = value[1:-1]
+                        env_vars[key.strip()] = value
 
     return env_vars
 
@@ -77,34 +83,27 @@ def save_credentials_to_env(username, password):
     """
     env_path = config_dir() / ".env"
 
-    # Lire le contenu existant pour préserver les autres variables
-    existing_content = {}
-    if env_path.exists():
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    existing_content[key.strip()] = value.strip()
-
-    # Mettre à jour les identifiants
+    # Préserver les autres variables du fichier
+    existing_content = load_env_file()
     existing_content["NAVIKI_USERNAME"] = username
     existing_content["NAVIKI_PASSWORD"] = password
 
-    # Écrire le fichier .env
-    with open(env_path, "w", encoding="utf-8") as f:
+    # Créé directement en 600 : un open() classique laisserait le mot de
+    # passe lisible (644 selon l'umask) jusqu'au chmod
+    fd = os.open(env_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write("# Configuration Naviki GPX Exporter\n")
         f.write("# Ce fichier est automatiquement généré et ignoré par Git\n\n")
         f.write("# Identifiants Naviki\n")
-        f.write(f"NAVIKI_USERNAME={existing_content.get('NAVIKI_USERNAME', '')}\n")
-        f.write(f"NAVIKI_PASSWORD={existing_content.get('NAVIKI_PASSWORD', '')}\n")
+        f.write(f"NAVIKI_USERNAME={existing_content['NAVIKI_USERNAME']}\n")
+        f.write(f"NAVIKI_PASSWORD={existing_content['NAVIKI_PASSWORD']}\n")
 
         # Ajouter les autres variables si elles existent
         for key, value in existing_content.items():
             if key not in ["NAVIKI_USERNAME", "NAVIKI_PASSWORD"]:
                 f.write(f"\n{key}={value}\n")
 
-    # Définir les permissions en lecture/écriture uniquement pour l'utilisateur
+    # Un fichier préexistant garde ses droits avec os.open
     os.chmod(env_path, 0o600)
     print(f"✅ Identifiants sauvegardés dans {env_path}")
     print("🔒 Permissions définies à 600 " "(lecture/écriture uniquement pour vous)")
@@ -284,7 +283,9 @@ def get_oauth_token_with_selenium(username, password, headless=True):
                 token = driver.execute_script("return localStorage.getItem('_n_a_at');")
 
                 if token:
-                    print(f"   ✓ Token récupéré: {token[:20]}...")
+                    # Aucun caractère du token : la sortie finit souvent dans
+                    # des logs (cron, Docker)
+                    print("   ✓ Token récupéré")
                     break
             except Exception:
                 pass
@@ -316,7 +317,12 @@ def get_oauth_token_with_selenium(username, password, headless=True):
             print("   - Problème réseau")
 
             # Sauvegarder une capture d'écran pour debug
-            screenshot_path = "/tmp/naviki_debug.png"
+            # Fichier unique en 600 : un chemin fixe dans /tmp pouvait être
+            # pré-créé (lien symbolique) ou lu par un autre utilisateur
+            fd, screenshot_path = tempfile.mkstemp(
+                prefix="naviki_debug_", suffix=".png"
+            )
+            os.close(fd)
             driver.save_screenshot(screenshot_path)
             print(f"\n📸 Capture d'écran sauvegardée: {screenshot_path}")
             print(f"   URL actuelle: {driver.current_url}")
@@ -363,6 +369,11 @@ def wait_browser_closed():
         _browser_closer.join()
 
 
+# Variables lues dans l'environnement, prioritaires sur le .env : elles évitent
+# de passer le mot de passe en argument, visible dans ps et l'historique
+CREDENTIAL_VARS = ("NAVIKI_USERNAME", "NAVIKI_PASSWORD", "NAVIKI_TOKEN")
+
+
 def parse_arguments():
     """Parse les arguments de ligne de commande"""
     parser = argparse.ArgumentParser(
@@ -374,7 +385,7 @@ def parse_arguments():
         epilog="""
 Exemples:
   %(prog)s --username MonLogin --password monmdp
-  %(prog)s --token 14dcc0f4-d964-396c-a19e-3cc42e36d372
+  %(prog)s --token VOTRE-TOKEN-OAUTH
   %(prog)s --username MonLogin --password monmdp --output ~/mes_traces
   %(prog)s --username MonLogin --password monmdp --headless
   %(prog)s  # Utilise les identifiants sauvegardés dans .env
@@ -384,20 +395,21 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
         """,
     )
 
-    # Charger les variables d'environnement depuis .env
+    # Valeurs par défaut : .env, puis variables d'environnement
     env_vars = load_env_file()
+    env_vars.update(
+        {name: os.environ[name] for name in CREDENTIAL_VARS if os.environ.get(name)}
+    )
 
     auth_group = parser.add_mutually_exclusive_group(required=False)
     auth_group.add_argument(
         "--username",
         "--login",
         dest="username",
-        default=env_vars.get("NAVIKI_USERNAME"),
         help="Login/Username Naviki (pas un email)",
     )
     auth_group.add_argument(
         "--token",
-        default=env_vars.get("NAVIKI_TOKEN"),
         help="Token OAuth (si vous l'avez déjà)",
     )
 
@@ -440,11 +452,19 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
 
     args = parser.parse_args()
 
+    # Valeurs par défaut appliquées après coup, pour savoir ce qui vient de la
+    # ligne de commande : un NAVIKI_TOKEN enregistré ne doit pas remplacer en
+    # silence un --username donné explicitement (et inversement)
+    auth_from_cli = args.username is not None or args.token is not None
+    if not auth_from_cli:
+        args.username = env_vars.get("NAVIKI_USERNAME")
+        args.token = env_vars.get("NAVIKI_TOKEN")
+
     # Vérifier qu'on a soit un token, soit username + password
     if not args.token and not args.username:
         parser.error(
             "Vous devez fournir soit --token, soit --username/--password, "
-            "ou avoir des identifiants sauvegardés dans .env"
+            "ou définir NAVIKI_USERNAME/NAVIKI_PASSWORD (environnement ou .env)"
         )
 
     # Validation: si username est fourni, password est requis
@@ -455,11 +475,9 @@ Note: Les identifiants peuvent être sauvegardés dans le fichier .env
     if not args.visible and not args.headless:
         args.headless = True
 
-    # Afficher si les identifiants proviennent de .env
-    if env_vars.get("NAVIKI_USERNAME") and not any(
-        arg in sys.argv for arg in ["--username", "--login", "--token"]
-    ):
-        print("🔑 Utilisation des identifiants depuis .env")
+    # Afficher si les identifiants proviennent de l'environnement ou de .env
+    if not auth_from_cli and (args.username or args.token):
+        print("🔑 Utilisation des identifiants de l'environnement ou de .env")
 
     return args
 
@@ -487,6 +505,118 @@ patterns = [
     r"(?P<year>\d{4})(?P<month>\d\d)(?P<day>\d\d)(?![\d])",
 ]
 
+
+def is_real_date(year, month, day):
+    """Vrai si la date existe au calendrier, sur une année plausible pour Naviki."""
+    try:
+        return 2000 <= datetime(int(year), int(month), int(day)).year <= 2099
+    except ValueError:
+        return False
+
+
+def date_from_title(title):
+    """
+    Date d'un titre Naviki : dict year, month, day (+ hour, minute si présents),
+    ou None si aucun motif ne donne une vraie date.
+
+    Un bloc de 8 chiffres se lit AAAAMMJJ, ou JJMMAAAA quand AAAAMMJJ n'est pas
+    une date : « Gouter30012024 » est le 30/01/2024, pas le 24/20/3001.
+    """
+    for pattern in patterns:
+        m = re.search(pattern, title)
+        if m is None:
+            continue
+        parts = m.groupdict()
+        if len(parts["year"]) == 2:
+            parts["year"] = "20" + parts["year"]
+        if is_real_date(parts["year"], parts["month"], parts["day"]):
+            return parts
+        digits = m.group(0)
+        if len(digits) == 8 and is_real_date(digits[4:], digits[2:4], digits[:2]):
+            return {"year": digits[4:], "month": digits[2:4], "day": digits[:2]}
+    return None
+
+
+def legacy_date_from_title(title):
+    """
+    Lecture des dates d'avant 1fbecdf : premier motif trouvé, même si la date
+    n'existe pas (« Gouter30012024 » donnait 3001-20-24). Ne sert qu'à
+    retrouver les fichiers enregistrés sous ces noms.
+    """
+    for pattern in patterns:
+        m = re.search(pattern, title)
+        if m:
+            parts = m.groupdict()
+            if len(parts["year"]) == 2:
+                parts["year"] = "20" + parts["year"]
+            return parts
+    return None
+
+
+def rename_legacy_file(way, output_dir, save_path):
+    """
+    Renomme vers save_path le fichier d'un trajet enregistré sous son ancien
+    nom erroné, pour éviter de le retélécharger en double.
+
+    Returns:
+        True si un fichier a été renommé.
+    """
+    legacy_parts = legacy_date_from_title(way["title"])
+    # Un ancien nom ne diffère du bon que s'il porte une date impossible :
+    # il ne peut donc pas être le fichier correct d'un autre trajet
+    if legacy_parts is None or is_real_date(
+        legacy_parts["year"], legacy_parts["month"], legacy_parts["day"]
+    ):
+        return False
+    legacy_path = output_dir / gpx_filename(way, legacy_parts)
+    if legacy_path == save_path or not legacy_path.exists():
+        return False
+    os.replace(legacy_path, save_path)
+    print(f"🔁 Renommé: {legacy_path.name} → {save_path.name}")
+    return True
+
+
+def gpx_filename(way, parts):
+    """
+    Nom du fichier GPX d'un trajet. C'est la clé de déduplication de
+    l'archive : un changement ici fait retélécharger les trajets concernés.
+
+    Args:
+        way: trajet renvoyé par l'API (title, crdate)
+        parts: date lue dans le titre (cf. date_from_title), ou None pour
+            se rabattre sur crdate
+
+    Returns:
+        Le nom du fichier, ou None si aucune date n'est disponible.
+    """
+    if parts is None:
+        if "crdate" not in way:
+            return None
+        # crdate est un timestamp UTC
+        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
+        # Titre nettoyé en suffixe s'il apporte quelque chose
+        title = way["title"]
+        safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
+        if len(safe_title) > 3 and safe_title != title:
+            return f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_{safe_title}.gpx"
+        return dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
+
+    year, month, day = parts["year"], parts["month"], parts["day"]
+    hour, minute = parts.get("hour"), parts.get("minute")
+    if hour and minute:
+        return f"{year}-{month}-{day}_{hour}-{minute}_Naviki.gpx"
+    # Pas d'heure dans le titre (ex. format compact 20241124) : l'heure vient
+    # de crdate
+    if "crdate" in way:
+        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
+        return f"{year}-{month}-{day}_{dt.strftime('%H-%M')}_UTC_Naviki.gpx"
+    return f"{year}-{month}-{day}_Naviki.gpx"
+
+
+# (connexion, lecture) en secondes : sans timeout, requests attend
+# indéfiniment une réponse qui ne vient pas. Le GPX le plus lent mesuré
+# prend 0,6 s.
+HTTP_TIMEOUT = (10, 60)
 
 # Téléchargements simultanés : ~4x plus rapide sur un export complet,
 # sans charger davantage le serveur Naviki
@@ -517,14 +647,19 @@ def download_gpx(session, oauth_token, uuid, save_path):
             "https://www.naviki.org/naviki/api/v6/Util/" "wayToFileWithUser/",
             data=form_data,
             headers=dl_headers,
+            timeout=HTTP_TIMEOUT,
         )
 
         if not dl.text.startswith("<?xml"):
             log(f"❌ Échec du téléchargement GPX (réponse invalide): {save_path.name}")
             return False
 
-        with open(save_path, "wb") as f:
+        # Écriture puis renommage atomique : un arrêt en cours d'écriture ne
+        # laisse qu'un .part, jamais un GPX tronqué que l'incrémental sauterait
+        part_path = save_path.with_name(save_path.name + ".part")
+        with open(part_path, "wb") as f:
             f.write(dl.text.encode())
+        os.replace(part_path, save_path)
         log(f"✅ Sauvegardé: {save_path}")
         return True
 
@@ -676,6 +811,7 @@ def main():
     success_count = 0
     error_count = 0
     skipped_count = 0
+    api_error = False
 
     # Les téléchargements partent pendant que la pagination continue
     pool = ThreadPoolExecutor(max_workers=DOWNLOAD_WORKERS)
@@ -683,128 +819,97 @@ def main():
     in_flight = set()
     deferred = []
 
-    while more_to_download:
-        r = s.get(
-            "https://www.naviki.org/naviki/api/v6/Way/2/"
-            f"findUserWaysByFilter/?filter={route_types}"
-            f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
-            "&fullDataSet=0"
-            f"&_={timestamp}"
-        )
+    try:
+        while more_to_download:
+            try:
+                r = s.get(
+                    "https://www.naviki.org/naviki/api/v6/Way/2/"
+                    f"findUserWaysByFilter/?filter={route_types}"
+                    f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
+                    "&fullDataSet=0"
+                    f"&_={timestamp}",
+                    timeout=HTTP_TIMEOUT,
+                )
+            except requests.RequestException as e:
+                api_error = True
+                print(f"❌ Erreur réseau sur la liste des trajets: {e}")
+                break
 
-        if r.status_code == 401 and token_from_cache:
-            print("🔄 Token en cache expiré, reconnexion...")
-            token_from_cache = False
-            oauth_token = login_or_exit(args)
-            s.headers.update({"Authorization": f"Bearer {oauth_token}"})
-            continue
+            if r.status_code == 401 and token_from_cache:
+                print("🔄 Token en cache expiré, reconnexion...")
+                token_from_cache = False
+                oauth_token = login_or_exit(args)
+                s.headers.update({"Authorization": f"Bearer {oauth_token}"})
+                continue
 
-        if r.status_code != 200:
-            print(f"❌ Erreur API: {r.status_code}")
-            if r.status_code == 401:
-                print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
-            break
+            if r.status_code != 200:
+                api_error = True
+                print(f"❌ Erreur API: {r.status_code}")
+                if r.status_code == 401:
+                    print("⚠️  Token invalide ou expiré. " "Veuillez vous reconnecter.")
+                break
 
-        j = r.json()
-        more_to_download = len(j["ways"]) > 0
-        offset += len(j["ways"])
+            j = r.json()
+            more_to_download = len(j["ways"]) > 0
+            offset += len(j["ways"])
 
-        for way in j["ways"]:
-            uuid = way["uuid"]
-            title = way["title"]
-            print(f"\nTraitement: {title}")
-            print(f"UUID: {uuid}")
+            for way in j["ways"]:
+                uuid = way["uuid"]
+                title = way["title"]
+                print(f"\nTraitement: {title}")
+                print(f"UUID: {uuid}")
 
-            # Try each pattern
-            m = None
-            for pattern in patterns:
-                m = re.search(pattern, title)
-                if m:
-                    break
+                parts = date_from_title(title)
 
-            if m is None:
-                # Fallback: use crdate timestamp with timezone awareness
-                # Check if title looks like a place name
-                # (contains letters/spaces)
-                if any(c.isalpha() for c in title) and not any(
-                    c.isdigit() for c in title[:4]
-                ):
-                    print(
-                        f"ℹ️  Titre personnalisé détecté "
-                        f"('{title[:30]}...'), utilisation de crdate"
-                    )
-                else:
-                    print(
-                        f"⚠️  Format de date non standard dans "
-                        f"'{title}', utilisation de crdate"
-                    )
-
-                if "crdate" in way:
-                    # Use timezone-aware datetime
-                    # (crdate is UTC timestamp)
-                    dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                    # Use sanitized title as prefix if it's short
-                    # and has no special chars
-                    safe_title = re.sub(r"[^\w\-]", "_", title)[:30]
-                    if len(safe_title) > 3 and safe_title != title:
-                        new_title = (
-                            f"{dt.strftime('%Y-%m-%d_%H-%M')}_UTC_" f"{safe_title}.gpx"
+                if parts is None:
+                    # Check if title looks like a place name
+                    # (contains letters/spaces)
+                    if any(c.isalpha() for c in title) and not any(
+                        c.isdigit() for c in title[:4]
+                    ):
+                        print(
+                            f"ℹ️  Titre personnalisé détecté "
+                            f"('{title[:30]}...'), utilisation de crdate"
                         )
                     else:
-                        new_title = dt.strftime("%Y-%m-%d_%H-%M") + "_UTC_Naviki.gpx"
-                else:
+                        print(
+                            f"⚠️  Format de date non standard dans "
+                            f"'{title}', utilisation de crdate"
+                        )
+
+                new_title = gpx_filename(way, parts)
+                if new_title is None:
                     print("❌ Impossible d'extraire la date, " "itinéraire ignoré")
                     error_count += 1
                     continue
-            else:
-                # Extract date components
-                year = m.group("year")
-                # Handle 2-digit or 4-digit year
-                if len(year) == 2:
-                    year = "20" + year
 
-                month = m.group("month")
-                day = m.group("day")
+                # Check if file already exists
+                save_path = output_dir.joinpath(new_title)
+                if not save_path.exists():
+                    rename_legacy_file(way, output_dir, save_path)
+                if save_path.exists():
+                    print(f"⏭️  Déjà présent, ignoré: {new_title}")
+                    skipped_count += 1
+                    continue
 
-                # Check if pattern includes time
-                # (check if groups exist in the match)
-                try:
-                    hour = m.group("hour")
-                    minute = m.group("minute")
-                    if hour and minute:
-                        new_title = (
-                            f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
-                        )
-                    else:
-                        raise IndexError  # Fall through to crdate
-                except (IndexError, AttributeError):
-                    # No time in the pattern
-                    # (e.g., compact format 20241124)
-                    # Use crdate for time
-                    if "crdate" in way:
-                        dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
-                        time_str = dt.strftime("%H-%M")
-                        new_title = f"{year}-{month}-{day}_{time_str}_UTC_" "Naviki.gpx"
-                    else:
-                        new_title = f"{year}-{month}-{day}_Naviki.gpx"
+                # Un fichier du même nom en cours de téléchargement serait écrasé :
+                # on le traite après le pool, comme le ferait le mode séquentiel
+                if save_path in in_flight:
+                    deferred.append((uuid, save_path))
+                    continue
 
-            # Check if file already exists
-            save_path = output_dir.joinpath(new_title)
-            if save_path.exists():
-                print(f"⏭️  Déjà présent, ignoré: {new_title}")
-                skipped_count += 1
-                continue
+                in_flight.add(save_path)
+                downloads.append(
+                    pool.submit(download_gpx, s, oauth_token, uuid, save_path)
+                )
 
-            # Un fichier du même nom en cours de téléchargement serait écrasé :
-            # on le traite après le pool, comme le ferait le mode séquentiel
-            if save_path in in_flight:
-                deferred.append((uuid, save_path))
-                continue
-
-            in_flight.add(save_path)
-            downloads.append(pool.submit(download_gpx, s, oauth_token, uuid, save_path))
-
-    pool.shutdown(wait=True)
+        pool.shutdown(wait=True)
+    except KeyboardInterrupt:
+        # Sans annulation, les threads du pool videraient toute la file
+        # avant que le processus ne s'arrête (~50 s sur un export complet)
+        pool.shutdown(wait=False, cancel_futures=True)
+        print("\n⛔ Interrompu : téléchargements en attente annulés")
+        sys.exit(130)
     results = [f.result() for f in downloads]
     for uuid, save_path in deferred:
         if save_path.exists():
@@ -823,6 +928,10 @@ def main():
     print(f"📊 Total traité: " f"{success_count + skipped_count + error_count}")
     print(f"📁 Fichiers sauvegardés dans: {output_dir}")
     wait_browser_closed()
+
+    # Code non nul pour qu'un cron ou un script appelant voie l'échec
+    if api_error or error_count:
+        sys.exit(1)
 
 
 if __name__ == "__main__":

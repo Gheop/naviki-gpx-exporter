@@ -177,14 +177,13 @@ L'ordre de priorité pour les identifiants est :
 Pour tester la sauvegarde et le chargement des identifiants :
 
 ```bash
-python test_credentials.py
+pytest tests/test_token_cache.py tests/test_argument_parsing.py
 ```
 
-Ce script vérifie :
-- ✅ Sauvegarde des identifiants
-- ✅ Chargement des identifiants
-- ✅ Permissions du fichier (600)
-- ✅ Présence dans `.gitignore`
+Ces tests vérifient :
+- ✅ Sauvegarde des identifiants, en préservant les autres variables
+- ✅ Chargement des identifiants (`.env`, guillemets, variables d'environnement)
+- ✅ Permissions du fichier : créé directement en 600
 
 ## 📞 Support
 
@@ -192,7 +191,7 @@ Si vous rencontrez des problèmes :
 
 1. Vérifiez que `.env` est bien dans `.gitignore` : `grep "^\.env$" .gitignore`
 2. Vérifiez les permissions : `ls -la .env` (devrait afficher `-rw-------`)
-3. Testez manuellement : `python test_credentials.py`
+3. Lancez les tests : `pytest tests/test_token_cache.py`
 
 ---
 

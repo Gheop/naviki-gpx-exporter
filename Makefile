@@ -12,7 +12,8 @@ help: ## Affiche cette aide
 build: ## Build l'image Docker
 	docker build -t $(IMAGE_NAME):$(VERSION) -t $(IMAGE_NAME):latest .
 
-run: ## Lance l'export (utilise les variables d'environnement .env)
+# --env-file : le mot de passe n'apparaît pas dans la ligne de commande
+run: ## Lance l'export (identifiants lus dans .env)
 	@if [ ! -f .env ]; then \
 		echo "⚠️  Fichier .env non trouvé. Créez-le à partir de .env.example"; \
 		exit 1; \
@@ -20,29 +21,26 @@ run: ## Lance l'export (utilise les variables d'environnement .env)
 	@echo "🚀 Lancement de l'export Naviki..."
 	@mkdir -p $(OUTPUT_DIR)
 	docker run --rm \
-		--user $(id -u):$(id -g) \
+		--user $$(id -u):$$(id -g) \
 		--env-file .env \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
-		--username "${NAVIKI_USERNAME}" \
-		--password "${NAVIKI_PASSWORD}" \
-		--output /output \
-		--headless
+		--output /output
 
 run-token: ## Lance l'export avec un token OAuth
 	@read -p "Token OAuth: " token; \
 	mkdir -p $(OUTPUT_DIR); \
-	docker run --rm \
-		--user $(id -u):$(id -g) \
+	NAVIKI_TOKEN="$$token" docker run --rm \
+		--user $$(id -u):$$(id -g) \
+		-e NAVIKI_TOKEN \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
-		--token "$token" \
 		--output /output
 
 run-custom: ## Lance avec des arguments personnalisés (ex: make run-custom ARGS="--help")
 	@mkdir -p $(OUTPUT_DIR)
 	docker run --rm \
-		--user $(id -u):$(id -g) \
+		--user $$(id -u):$$(id -g) \
 		-v $(PWD)/output:/output \
 		$(IMAGE_NAME):latest \
 		$(ARGS)

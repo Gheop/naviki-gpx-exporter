@@ -21,6 +21,8 @@ class TestMainFunction:
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)
+    # open est simulé : le renommage du .part ne trouverait pas de fichier
+    @patch("naviki_exporter.os.replace", lambda src, dst: None)
     def test_main_with_token_success(self, mock_file, mock_path, mock_session):
         """Test main avec token fourni et téléchargement réussi"""
 
@@ -69,15 +71,15 @@ class TestMainFunction:
 
     @patch("sys.argv", ["prog", "--username", "testuser", "--password", "testpass"])
     @patch("naviki_exporter.get_oauth_token_with_selenium")
-    @patch("naviki_exporter.sys.exit")
+    @patch("naviki_exporter.sys.exit", side_effect=SystemExit(1))
     def test_main_with_failed_auth(self, mock_exit, mock_auth):
         """Test main quand l'authentification échoue"""
 
         # Auth fails
         mock_auth.return_value = None
 
-        # Call main
-        naviki_exporter.main()
+        with pytest.raises(SystemExit):
+            naviki_exporter.main()
 
         # Should call sys.exit(1)
         mock_exit.assert_called_once_with(1)
@@ -101,10 +103,11 @@ class TestMainFunction:
         mock_output_dir = MagicMock()
         mock_path.return_value = mock_output_dir
 
-        # Call main
-        naviki_exporter.main()
+        # Arrêt sur l'erreur, code de sortie 1 pour un cron
+        with pytest.raises(SystemExit) as exit_info:
+            naviki_exporter.main()
 
-        # Should stop after error
+        assert exit_info.value.code == 1
         mock_session_instance.post.assert_not_called()
 
     @patch("sys.argv", ["prog", "--token", "test-token-123"])
@@ -153,6 +156,8 @@ class TestMainFunction:
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)
+    # open est simulé : le renommage du .part ne trouverait pas de fichier
+    @patch("naviki_exporter.os.replace", lambda src, dst: None)
     def test_main_handle_custom_title(self, mock_file, mock_path, mock_session):
         """Test main avec titre personnalisé (sans date)"""
 
@@ -236,10 +241,11 @@ class TestMainFunction:
         mock_file_path.exists.return_value = False
         mock_output_dir.joinpath.return_value = mock_file_path
 
-        # Call main - should not crash
-        naviki_exporter.main()
+        # Le téléchargement échoue : pas de plantage, mais code de sortie 1
+        with pytest.raises(SystemExit) as exit_info:
+            naviki_exporter.main()
 
-        # Download was attempted but failed
+        assert exit_info.value.code == 1
         mock_session_instance.post.assert_called_once()
 
     @patch("sys.argv", ["prog", "--username", "testuser", "--password", "testpass"])

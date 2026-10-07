@@ -33,6 +33,12 @@ ENV
 *~
 .DS_Store
 
+# Secrets : jamais envoyés au démon ou à un builder distant
+.env
+.env.*
+!.env.example
+.naviki-token.json
+
 # Project specific
 *.gpx
 traces/

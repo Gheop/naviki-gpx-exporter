@@ -6,7 +6,7 @@
 You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to send all your GPX on OpenStreetMap !
 
 [![Naviki](https://img.shields.io/badge/Naviki-supported-FF6600?style=flat&logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2Ij4KPHBhdGggZD0iTTAgMCBDNS4yOCAwIDEwLjU2IDAgMTYgMCBDMTYgNS4yOCAxNiAxMC41NiAxNiAxNiBDMTAuNzIgMTYgNS40NCAxNiAwIDE2IEMwIDEwLjcyIDAgNS40NCAwIDAgWiAiIGZpbGw9IiNGQkZBRjkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMCkiLz4KPHBhdGggZD0iTTAgMCBDNS4yOCAwIDEwLjU2IDAgMTYgMCBDMTYgMi4zMSAxNiA0LjYyIDE2IDcgQzEzLjM2IDYuMzQgMTAuNzIgNS42OCA4IDUgQzggNC4zNCA4IDMuNjggOCAzIEM3LjEwMjgxMjUgMy4yNzg0Mzc1IDcuMTAyODEyNSAzLjI3ODQzNzUgNi4xODc1IDMuNTYyNSBDNCA0IDQgNCAxIDMgQzAuNjcgMy42NiAwLjM0IDQuMzIgMCA1IEMwIDMuMzUgMCAxLjcgMCAwIFogIiBmaWxsPSIjRkVGREZEIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDApIi8+CjxwYXRoIGQ9Ik0wIDAgQzEuOTggMCAzLjk2IDAgNiAwIEM2IDAuNjYgNiAxLjMyIDYgMiBDOC4zMSAyLjMzIDEwLjYyIDIuNjYgMTMgMyBDMTMgMy42NiAxMyA0LjMyIDEzIDUgQzEwLjAzIDQuNTA1IDEwLjAzIDQuNTA1IDcgNCBDNi42NyA1LjY1IDYuMzQgNy4zIDYgOSBDNC4zNSA5LjMzIDIuNyA5LjY2IDEgMTAgQzEgOS4zNCAxIDguNjggMSA4IEMxLjY2IDcuNjcgMi4zMiA3LjM0IDMgNyBDMyA1LjY4IDMgNC4zNiAzIDMgQzIuMDEgMi42NyAxLjAyIDIuMzQgMCAyIEMwIDEuMzQgMCAwLjY4IDAgMCBaICIgZmlsbD0iI0UwQjJBMCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMiwzKSIvPgo8cGF0aCBkPSJNMCAwIEMtMC4zMyAxLjY1IC0wLjY2IDMuMyAtMSA1IEMtMi42NSA1LjMzIC00LjMgNS42NiAtNiA2IEMtNiA0IC02IDQgLTQuMTI1IDEuODc1IEMtMiAwIC0yIDAgMCAwIFogIiBmaWxsPSIjNzY3Njc2IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5LDcpIi8+Cjwvc3ZnPgo=)](https://www.naviki.org)
-[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://hub.docker.com)
@@ -50,7 +50,7 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 ## 🔧 Prerequisites
 
 ### Standard Installation
-- **Python 3.7+**
+- **Python 3.11+**
 - **Firefox browser** and **geckodriver**: only used as a fallback if the direct login fails, and with `--visible`
 - A Naviki account with recorded routes
 
@@ -79,7 +79,7 @@ pip install -r requirements.txt
 Or install manually:
 
 ```bash
-pip install selenium requests beautifulsoup4
+pip install selenium requests
 ```
 
 #### 3. Install geckodriver (Firefox WebDriver)
@@ -160,6 +160,16 @@ docker-compose build
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
 ```
+
+A password given with `--password` is visible to other users of the machine (`ps`) and stays in your shell history. For regular use, put the credentials in `.env` (see `.env.example`) or export `NAVIKI_USERNAME` and `NAVIKI_PASSWORD`, then run the script without arguments:
+
+```bash
+export NAVIKI_USERNAME=YourUsername
+read -rs NAVIKI_PASSWORD && export NAVIKI_PASSWORD
+python naviki-gpx-exporter.py
+```
+
+Command-line options win over environment variables, which win over `.env`.
 
 #### Token Cache
 
@@ -268,12 +278,11 @@ make clean        # Clean up images
 cp .env.example .env
 nano .env  # Add your credentials
 
-# Run
-docker-compose run --rm naviki-exporter \
-  --username "$NAVIKI_USERNAME" \
-  --password "$NAVIKI_PASSWORD" \
-  --output /output
+# Run: .env is mounted read-only and read by the script
+docker compose run --rm naviki-exporter --output /output
 ```
+
+Create `.env` before the first run, otherwise Docker creates an empty `.env` directory in its place. Compose may warn about variables in `.env` (for example a `$` in the password): the file is read as is by the script, so the warning has no effect.
 
 ## 📚 Examples
 
@@ -307,7 +316,7 @@ python naviki-gpx-exporter.py \
 
 #### Example 4: Using stored token
 ```bash
-# Get your token once (lasts for session)
+# Get your token once (valid until Naviki expires it)
 python naviki-gpx-exporter.py --username MyUsername --password 'pass' --output /tmp
 
 # Reuse token for multiple runs
@@ -370,18 +379,28 @@ docker run --rm \
   --output /output
 ```
 
+#### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0    | Every route was downloaded or already present |
+| 1    | Login failed, the API returned an error, or at least one download failed |
+| 130  | Interrupted with Ctrl-C; queued downloads are cancelled |
+
+A cron job or a wrapper script can rely on a non-zero code to raise an alert.
+
 #### Example 5: Automated daily backup (cron)
 
 **Standard Python:**
 ```bash
-# Add to crontab (crontab -e)
-0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --username USER --password 'PASS' --output ~/naviki-backup >> ~/naviki.log 2>&1
+# Add to crontab (crontab -e); credentials in /path/to/.env (mode 600)
+0 2 * * * /usr/bin/python3 /path/to/naviki-gpx-exporter.py --output ~/naviki-backup >> ~/naviki.log 2>&1
 ```
 
 **Docker:**
 ```bash
-# Add to crontab (crontab -e)
-0 2 * * * docker run --rm --user $(id -u):$(id -g) -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --token YOUR_TOKEN --output /output >> /var/log/naviki.log 2>&1
+# Add to crontab (crontab -e); credentials in /home/user/naviki.env (mode 600, no quotes)
+0 2 * * * docker run --rm --user $(id -u):$(id -g) --env-file /home/user/naviki.env -v /home/user/naviki-backup:/output ghcr.io/gheop/naviki-gpx-exporter:latest --output /output >> /var/log/naviki.log 2>&1
 ```
 
 #### Example 6: Automated backup on Synology NAS
@@ -416,12 +435,12 @@ docker run --rm \
 | `--username` | `--login` | Yes* | Your Naviki username/login |
 | `--password` | - | Yes* | Your Naviki password |
 | `--token` | - | Yes* | OAuth token (alternative to username/password) |
-| `--output` | `-o` | No | Output directory (default: `/tmp`) |
+| `--output` | `-o` | No | Output directory (default: `./traces`) |
 | `--types` | - | No | Route types to export (default: all) |
 | `--headless` | - | No | Run browser in headless mode (default) |
 | `--visible` | - | No | Show browser during authentication |
 
-*Either `--username`/`--password` OR `--token` is required.
+*Either `--username`/`--password` OR `--token` is required. They can also come from the `NAVIKI_USERNAME`, `NAVIKI_PASSWORD` and `NAVIKI_TOKEN` environment variables, or from `.env`.
 
 ### Route Types
 
@@ -603,17 +622,18 @@ docker run --rm \
 export NAVIKI_USERNAME="MyUsername"
 export NAVIKI_PASSWORD="MyPassword"
 
-# Run without exposing credentials
+# "-e NAME" without a value: docker reads the value from its own
+# environment, so the password never appears on a command line
 docker run --rm \
   --user $(id -u):$(id -g) \
   -e NAVIKI_USERNAME \
   -e NAVIKI_PASSWORD \
   -v $(pwd)/output:/output \
   ghcr.io/gheop/naviki-gpx-exporter:latest \
-  --username "$NAVIKI_USERNAME" \
-  --password "$NAVIKI_PASSWORD" \
   --output /output
 ```
+
+`--env-file .env` works too (that is what `make run` does), but docker keeps quotes literally: write `NAVIKI_PASSWORD=secret`, not `NAVIKI_PASSWORD="secret"`.
 
 ### Integration with CI/CD
 
@@ -797,5 +817,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date       | Changes                                                              |
 |---------|------------|----------------------------------------------------------------------|
+| 1.1.2   | 2026-10-07 | Require Python 3.11+, drop beautifulsoup4 from install, fix token wording |
+| 1.1.1   | 2026-10-07 | Document credentials from environment, fix compose, cron and defaults |
+| 1.1.0   | 2026-10-07 | Add exit codes section                                              |
 | 1.0.1   | 2026-10-07 | Document HTTP login, make Firefox optional, update sync timings      |
 | 1.0.0   | 2026-10-07 | Initialize changelog, document token cache and parallel downloads |

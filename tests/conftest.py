@@ -22,6 +22,10 @@ def isolated_config_dir(tmp_path, monkeypatch):
     config = tmp_path / "config"
     config.mkdir()
     monkeypatch.setenv("NAVIKI_CONFIG_DIR", str(config))
+    # Des identifiants exportés dans le shell du développeur fausseraient
+    # les tests au même titre qu'un .env
+    for name in ("NAVIKI_USERNAME", "NAVIKI_PASSWORD", "NAVIKI_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
     return config
 
 

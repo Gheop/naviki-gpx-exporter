@@ -8,6 +8,7 @@ import os
 import sys
 
 import pytest
+from unittest.mock import patch
 
 # Add parent directory to path to import the main script
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -188,3 +189,78 @@ class TestParseArguments:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestEnvironmentCredentials:
+    """Identifiants depuis l'environnement, sans les passer en argument"""
+
+    def parse(self, argv):
+        # module partagé chargé par conftest.py, pas la copie privée du fichier
+        exporter = sys.modules["naviki_exporter"]
+        with patch("sys.argv", ["prog", *argv]):
+            return exporter.parse_arguments()
+
+    def test_environment_provides_credentials(self, monkeypatch):
+        monkeypatch.setenv("NAVIKI_USERNAME", "alice")
+        monkeypatch.setenv("NAVIKI_PASSWORD", "s3cret")
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("alice", "s3cret")
+
+    def test_command_line_wins_over_environment(self, monkeypatch):
+        monkeypatch.setenv("NAVIKI_USERNAME", "alice")
+        monkeypatch.setenv("NAVIKI_PASSWORD", "s3cret")
+
+        args = self.parse(["--username", "bob", "--password", "pw"])
+
+        assert (args.username, args.password) == ("bob", "pw")
+
+    def test_environment_wins_over_env_file(self, monkeypatch, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text(
+            "NAVIKI_USERNAME=from_file\nNAVIKI_PASSWORD=file_pw\n"
+        )
+        monkeypatch.setenv("NAVIKI_PASSWORD", "env_pw")
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("from_file", "env_pw")
+
+
+class TestEnvFilePrecedence:
+    """Lecture du .env : guillemets, et priorité de la ligne de commande"""
+
+    def parse(self, argv):
+        exporter = sys.modules["naviki_exporter"]
+        with patch("sys.argv", ["prog", *argv]):
+            return exporter.parse_arguments()
+
+    def test_quotes_are_stripped(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text(
+            "NAVIKI_USERNAME='alice'\nNAVIKI_PASSWORD=\"pa ss\"\n"
+        )
+
+        args = self.parse([])
+
+        assert (args.username, args.password) == ("alice", "pa ss")
+
+    def test_saved_token_does_not_override_cli_username(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text("NAVIKI_TOKEN=saved-token\n")
+
+        args = self.parse(["--username", "alice", "--password", "pw"])
+
+        assert args.token is None
+        assert args.username == "alice"
+
+    def test_saved_username_does_not_block_cli_token(self, isolated_config_dir):
+        # un NAVIKI_USERNAME sans mot de passe faisait échouer --token
+        (isolated_config_dir / ".env").write_text("NAVIKI_USERNAME=alice\n")
+
+        args = self.parse(["--token", "tok"])
+
+        assert (args.token, args.username) == ("tok", None)
+
+    def test_without_cli_saved_values_apply(self, isolated_config_dir):
+        (isolated_config_dir / ".env").write_text("NAVIKI_TOKEN=saved-token\n")
+
+        assert self.parse([]).token == "saved-token"

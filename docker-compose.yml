@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   naviki-exporter:
     build:
@@ -8,28 +6,32 @@ services:
     image: naviki-gpx-exporter:latest
     container_name: naviki-exporter
     
-    # Variables d'environnement (optionnel, peut être passé en ligne de commande)
+    # Le .env est monté tel quel et lu par le script : passé par
+    # « environment: ${VAR} », un $ dans le mot de passe était interprété
+    # par compose et le mot de passe tronqué
     environment:
-      - NAVIKI_USERNAME=${NAVIKI_USERNAME}
-      - NAVIKI_PASSWORD=${NAVIKI_PASSWORD}
-    
-    # Montage du volume pour les exports
+      - NAVIKI_CONFIG_DIR=/config
+    # « z » rend les montages lisibles sous SELinux (Fedora, RHEL), sans
+    # effet ailleurs. Créer .env avant le premier lancement (cp .env.example
+    # .env) : sinon Docker crée un dossier .env à sa place
     volumes:
-      - ./output:/output
-    
+      - ./output:/output:z
+      - ./.env:/config/.env:ro,z
+
     # Commande par défaut (à surcharger au lancement)
-    # Exemple: docker-compose run naviki-exporter --username user --password pass --output /output
+    # Exemple: docker compose run --rm naviki-exporter --output /output
     command: ["--help"]
     
     # Pas de restart automatique pour un script one-shot
     restart: "no"
     
-    # Limites de ressources (optionnel)
+    # Limites de ressources (optionnel). Le repli Firefox, utilisé si le
+    # login HTTP échoue, atteint ~580 Mo : 512M provoquait un OOM kill
     deploy:
       resources:
         limits:
           cpus: '1'
-          memory: 512M
+          memory: 1G
         reservations:
           cpus: '0.5'
           memory: 256M

@@ -5,3 +5,14 @@
 # CVE-2024-XXXXX
 
 # Note: Ne pas ignorer les vulnérabilités CRITICAL sans justification solide
+# Copies embarquées par pip lui-même (pip/_vendor), y compris dans pip 26.2.1,
+# la dernière version au 2026-10-07. Elles ne servent qu'à exécuter pip, jamais
+# à l'exporteur ; pip reste dans l'image pour `make test`. À retirer dès qu'une
+# version de pip embarque les correctifs.
+# msgpack 1.1.2 (pip/_vendor)
+GHSA-6v7p-g79w-8964
+# setuptools 70.3.0 (pip/_vendor)
+CVE-2025-47273
+# urllib3 2.7.0 (pip/_vendor) ; l'urllib3 utilisé par requests est en 2.8.0
+CVE-2026-97687
+CVE-2026-97689

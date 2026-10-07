@@ -93,3 +93,34 @@ def test_corrupt_cache_is_ignored(tmp_path, isolated_config_dir):
     _, login = run_main(tmp_path, [200])
 
     login.assert_called_once()
+
+
+def test_save_credentials_creates_private_env(isolated_config_dir):
+    env = isolated_config_dir / ".env"
+    env.write_text("NAVIKI_TOKEN=keep-me\nNAVIKI_PASSWORD=old\n")
+    os.chmod(env, 0o644)
+
+    naviki_exporter.save_credentials_to_env("alice", "new-pw")
+
+    saved = naviki_exporter.load_env_file()
+    assert saved["NAVIKI_USERNAME"] == "alice"
+    assert saved["NAVIKI_PASSWORD"] == "new-pw"
+    assert saved["NAVIKI_TOKEN"] == "keep-me"
+    if os.name != "nt":
+        assert stat.S_IMODE(env.stat().st_mode) == 0o600
+
+
+def test_new_env_is_never_world_readable(isolated_config_dir, monkeypatch):
+    """Le fichier naît en 600 : pas de fenêtre en 644 avant le chmod"""
+    modes = []
+    real_open = os.open
+
+    def spy_open(path, flags, mode=0o777, *args, **kwargs):
+        modes.append(mode)
+        return real_open(path, flags, mode, *args, **kwargs)
+
+    monkeypatch.setattr(naviki_exporter.os, "open", spy_open)
+
+    naviki_exporter.save_credentials_to_env("alice", "pw")
+
+    assert modes == [0o600]
