@@ -82,34 +82,27 @@ def save_credentials_to_env(username, password):
     """
     env_path = config_dir() / ".env"
 
-    # Lire le contenu existant pour préserver les autres variables
-    existing_content = {}
-    if env_path.exists():
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, value = line.split("=", 1)
-                    existing_content[key.strip()] = value.strip()
-
-    # Mettre à jour les identifiants
+    # Préserver les autres variables du fichier
+    existing_content = load_env_file()
     existing_content["NAVIKI_USERNAME"] = username
     existing_content["NAVIKI_PASSWORD"] = password
 
-    # Écrire le fichier .env
-    with open(env_path, "w", encoding="utf-8") as f:
+    # Créé directement en 600 : un open() classique laisserait le mot de
+    # passe lisible (644 selon l'umask) jusqu'au chmod
+    fd = os.open(env_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write("# Configuration Naviki GPX Exporter\n")
         f.write("# Ce fichier est automatiquement généré et ignoré par Git\n\n")
         f.write("# Identifiants Naviki\n")
-        f.write(f"NAVIKI_USERNAME={existing_content.get('NAVIKI_USERNAME', '')}\n")
-        f.write(f"NAVIKI_PASSWORD={existing_content.get('NAVIKI_PASSWORD', '')}\n")
+        f.write(f"NAVIKI_USERNAME={existing_content['NAVIKI_USERNAME']}\n")
+        f.write(f"NAVIKI_PASSWORD={existing_content['NAVIKI_PASSWORD']}\n")
 
         # Ajouter les autres variables si elles existent
         for key, value in existing_content.items():
             if key not in ["NAVIKI_USERNAME", "NAVIKI_PASSWORD"]:
                 f.write(f"\n{key}={value}\n")
 
-    # Définir les permissions en lecture/écriture uniquement pour l'utilisateur
+    # Un fichier préexistant garde ses droits avec os.open
     os.chmod(env_path, 0o600)
     print(f"✅ Identifiants sauvegardés dans {env_path}")
     print("🔒 Permissions définies à 600 " "(lecture/écriture uniquement pour vous)")
