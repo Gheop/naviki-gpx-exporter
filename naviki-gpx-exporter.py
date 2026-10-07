@@ -560,8 +560,12 @@ def download_gpx(session, oauth_token, uuid, save_path):
             log(f"❌ Échec du téléchargement GPX (réponse invalide): {save_path.name}")
             return False
 
-        with open(save_path, "wb") as f:
+        # Écriture puis renommage atomique : un arrêt en cours d'écriture ne
+        # laisse qu'un .part, jamais un GPX tronqué que l'incrémental sauterait
+        part_path = save_path.with_name(save_path.name + ".part")
+        with open(part_path, "wb") as f:
             f.write(dl.text.encode())
+        os.replace(part_path, save_path)
         log(f"✅ Sauvegardé: {save_path}")
         return True
 

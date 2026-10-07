@@ -127,3 +127,22 @@ def test_ctrl_c_cancels_queued_downloads(tmp_path):
     assert exit_info.value.code == 130
     time.sleep(0.5)  # laisse finir les téléchargements déjà démarrés
     assert session.post.call_count <= naviki_exporter.DOWNLOAD_WORKERS
+
+
+def test_interrupted_write_leaves_no_gpx(tmp_path):
+    """Un échec avant le renommage ne laisse aucun faux « déjà présent »"""
+    tmp_path.mkdir(exist_ok=True)
+    save_path = tmp_path / "2025-10-16_07-20_Naviki.gpx"
+    session = MagicMock()
+    session.post.return_value = MagicMock(text="<?xml ok")
+
+    with patch("naviki_exporter.os.replace", side_effect=OSError("disk full")):
+        ok = naviki_exporter.download_gpx(session, "tok", "u1", save_path)
+
+    assert ok is False
+    assert not save_path.exists()
+
+    # le run suivant réécrit le fichier normalement
+    assert naviki_exporter.download_gpx(session, "tok", "u1", save_path) is True
+    assert save_path.read_text() == "<?xml ok"
+    assert [p.name for p in tmp_path.iterdir() if p.suffix == ".part"] == []

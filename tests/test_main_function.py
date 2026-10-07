@@ -21,6 +21,8 @@ class TestMainFunction:
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)
+    # open est simulé : le renommage du .part ne trouverait pas de fichier
+    @patch("naviki_exporter.os.replace", lambda src, dst: None)
     def test_main_with_token_success(self, mock_file, mock_path, mock_session):
         """Test main avec token fourni et téléchargement réussi"""
 
@@ -154,6 +156,8 @@ class TestMainFunction:
     @patch("naviki_exporter.requests.Session")
     @patch("naviki_exporter.pathlib.Path")
     @patch("builtins.open", new_callable=mock_open)
+    # open est simulé : le renommage du .part ne trouverait pas de fichier
+    @patch("naviki_exporter.os.replace", lambda src, dst: None)
     def test_main_handle_custom_title(self, mock_file, mock_path, mock_session):
         """Test main avec titre personnalisé (sans date)"""
 
