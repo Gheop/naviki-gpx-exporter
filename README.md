@@ -36,7 +36,8 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 ## ✨ Features
 
 - 🤖 **Fully automated authentication** using Selenium WebDriver
-- 📦 **Batch download** all your Naviki routes in one command
+- 📦 **Batch download** all your Naviki routes in one command, 4 files at a time
+- 🔑 **Token cache** - Firefox only starts when the cached token has expired
 - 🔄 **Incremental sync** - skips already downloaded files
 - 📅 **Smart date parsing** - handles multiple date formats
 - 🎯 **Flexible filtering** - export recorded, planned, or shared routes
@@ -157,6 +158,27 @@ docker-compose build
 
 ```bash
 python naviki-gpx-exporter.py --username YourUsername --password 'YourPassword'
+```
+
+#### Token Cache
+
+After a successful login, the OAuth token is saved to `.naviki-token.json` (mode 600, ignored by Git) next to the script. Later runs with the same username reuse it and skip Firefox entirely, which brings a daily sync from ~9 s to ~2 s. When Naviki rejects the token (HTTP 401), the script logs in again and refreshes the cache.
+
+To force a new login, delete the file:
+
+```bash
+rm .naviki-token.json
+```
+
+`NAVIKI_CONFIG_DIR` changes the folder holding `.env` and `.naviki-token.json`. With Docker, mount a volume there to keep the cache between runs:
+
+```bash
+docker run --rm \
+  -e NAVIKI_CONFIG_DIR=/config \
+  -v naviki-config:/config \
+  -v $(pwd)/output:/output \
+  ghcr.io/gheop/naviki-gpx-exporter:latest \
+  --username YourUsername --password 'YourPassword' --output /output
 ```
 
 #### Using a Pre-existing Token
@@ -769,3 +791,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **🌟 If this tool helped you, consider giving it a star!**
 
 **🐳 Docker users**: This project is Docker-ready! See the Docker sections above for zero-hassle installation.
+
+## README changelog
+
+| Version | Date       | Changes                                                              |
+|---------|------------|----------------------------------------------------------------------|
+| 1.0.0   | 2026-10-07 | Initialize changelog, document token cache and parallel downloads |
