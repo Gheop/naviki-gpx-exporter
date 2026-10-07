@@ -488,6 +488,37 @@ patterns = [
 ]
 
 
+def is_real_date(year, month, day):
+    """Vrai si la date existe au calendrier, sur une année plausible pour Naviki."""
+    try:
+        return 2000 <= datetime(int(year), int(month), int(day)).year <= 2099
+    except ValueError:
+        return False
+
+
+def date_from_title(title):
+    """
+    Date d'un titre Naviki : dict year, month, day (+ hour, minute si présents),
+    ou None si aucun motif ne donne une vraie date.
+
+    Un bloc de 8 chiffres se lit AAAAMMJJ, ou JJMMAAAA quand AAAAMMJJ n'est pas
+    une date : « Gouter30012024 » est le 30/01/2024, pas le 24/20/3001.
+    """
+    for pattern in patterns:
+        m = re.search(pattern, title)
+        if m is None:
+            continue
+        parts = m.groupdict()
+        if len(parts["year"]) == 2:
+            parts["year"] = "20" + parts["year"]
+        if is_real_date(parts["year"], parts["month"], parts["day"]):
+            return parts
+        digits = m.group(0)
+        if len(digits) == 8 and is_real_date(digits[4:], digits[2:4], digits[:2]):
+            return {"year": digits[4:], "month": digits[2:4], "day": digits[:2]}
+    return None
+
+
 # Téléchargements simultanés : ~4x plus rapide sur un export complet,
 # sans charger davantage le serveur Naviki
 DOWNLOAD_WORKERS = 4
@@ -715,14 +746,9 @@ def main():
             print(f"\nTraitement: {title}")
             print(f"UUID: {uuid}")
 
-            # Try each pattern
-            m = None
-            for pattern in patterns:
-                m = re.search(pattern, title)
-                if m:
-                    break
+            parts = date_from_title(title)
 
-            if m is None:
+            if parts is None:
                 # Fallback: use crdate timestamp with timezone awareness
                 # Check if title looks like a place name
                 # (contains letters/spaces)
@@ -757,30 +783,13 @@ def main():
                     error_count += 1
                     continue
             else:
-                # Extract date components
-                year = m.group("year")
-                # Handle 2-digit or 4-digit year
-                if len(year) == 2:
-                    year = "20" + year
-
-                month = m.group("month")
-                day = m.group("day")
-
-                # Check if pattern includes time
-                # (check if groups exist in the match)
-                try:
-                    hour = m.group("hour")
-                    minute = m.group("minute")
-                    if hour and minute:
-                        new_title = (
-                            f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
-                        )
-                    else:
-                        raise IndexError  # Fall through to crdate
-                except (IndexError, AttributeError):
-                    # No time in the pattern
-                    # (e.g., compact format 20241124)
-                    # Use crdate for time
+                year, month, day = parts["year"], parts["month"], parts["day"]
+                hour, minute = parts.get("hour"), parts.get("minute")
+                if hour and minute:
+                    new_title = f"{year}-{month}-{day}_{hour}-{minute}" "_Naviki.gpx"
+                else:
+                    # Pas d'heure dans le titre (ex. format compact 20241124) :
+                    # l'heure vient de crdate
                     if "crdate" in way:
                         dt = datetime.fromtimestamp(way["crdate"], tz=timezone.utc)
                         time_str = dt.strftime("%H-%M")
