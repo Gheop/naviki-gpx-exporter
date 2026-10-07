@@ -130,16 +130,6 @@ else
 fi
 rm -f /tmp/test-requests.txt
 
-# Test 9: Dépendances Python (beautifulsoup4)
-log_test "Module beautifulsoup4 est installé"
-if docker run --rm --entrypoint pip "$IMAGE_NAME" show beautifulsoup4 &> /tmp/test-bs4.txt; then
-    BS4_VERSION=$(grep "Version:" /tmp/test-bs4.txt | cut -d' ' -f2)
-    log_success "BeautifulSoup4 installé: v$BS4_VERSION"
-else
-    log_error "BeautifulSoup4 non trouvé"
-fi
-rm -f /tmp/test-bs4.txt
-
 # Test 10: Structure des dossiers
 log_test "Structure des dossiers"
 if docker run --rm --entrypoint ls "$IMAGE_NAME" -la /app &> /tmp/test-structure.txt; then

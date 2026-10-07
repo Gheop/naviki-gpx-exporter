@@ -79,7 +79,7 @@ pip install -r requirements.txt
 Or install manually:
 
 ```bash
-pip install selenium requests beautifulsoup4
+pip install selenium requests
 ```
 
 #### 3. Install geckodriver (Firefox WebDriver)

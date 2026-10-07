@@ -4,7 +4,7 @@ Script pour télécharger automatiquement les traces GPX depuis Naviki
 Authentification automatique : login HTTP direct, Selenium (Firefox) en secours
 
 Installation requise:
-  pip install selenium requests beautifulsoup4
+  pip install selenium requests
 
 Installation du driver Firefox (geckodriver):
   - Ubuntu/Debian: sudo apt install firefox-geckodriver

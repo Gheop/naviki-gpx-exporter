@@ -31,11 +31,10 @@ RUN GECKODRIVER_VERSION="v0.35.0" && \
 # Création du répertoire de travail
 WORKDIR /app
 
-# Copie des fichiers de dépendances
-COPY requirements.txt .
-
-# Installation des dépendances Python
-RUN pip install --no-cache-dir -r requirements.txt
+# Dépendances verrouillées avec empreintes : image reproductible, et un
+# paquet altéré sur PyPI fait échouer le build
+COPY requirements.lock .
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 # Copie du script principal
 COPY naviki-gpx-exporter.py .
