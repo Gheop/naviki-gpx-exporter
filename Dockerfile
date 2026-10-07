@@ -44,8 +44,14 @@ RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 # Copie du script principal
 COPY naviki-gpx-exporter.py .
 
-# Création du dossier de sortie par défaut
-RUN mkdir -p /output
+# Utilisateur non root, uid 1000 comme le premier utilisateur d'un hôte Linux
+# courant : les fichiers écrits dans /output lui appartiennent. HOME sert au
+# profil Firefox du repli Selenium, /config au .env et au cache de token.
+RUN useradd --create-home --uid 1000 naviki && \
+    mkdir -p /output /config && \
+    chown naviki:naviki /output /config
+ENV NAVIKI_CONFIG_DIR=/config
+USER naviki
 
 # Définir le volume pour les fichiers exportés
 VOLUME ["/output"]
