@@ -15,15 +15,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Installation de geckodriver (version fixe pour éviter les problèmes d'API).
-# Empreintes calculées le 2026-10-07 (GitHub n'en publie pas pour cette
-# version) : une archive modifiée depuis fait échouer le build
-RUN GECKODRIVER_VERSION="v0.35.0" && \
+# Empreintes publiées par GitHub pour les assets de la release : une archive
+# modifiée fait échouer le build
+RUN GECKODRIVER_VERSION="v0.37.1" && \
     ARCH=$(dpkg --print-architecture) && \
     case "$ARCH" in \
         amd64) GECKODRIVER_ARCH="linux64"; \
-               GECKODRIVER_SHA256="ac26e9ba8f3b8ce0fbf7339b9c9020192f6dcfcbf04a2bcd2af80dfe6bb24260" ;; \
+               GECKODRIVER_SHA256="e815130ea95983e162ae91843b48d3a3ce991735635fce83a647afde21e09f7e" ;; \
         arm64) GECKODRIVER_ARCH="linux-aarch64"; \
-               GECKODRIVER_SHA256="91d1e446646d8ee85830970e4480652b725f19e7ecbefa3ffd3947bc7be23a47" ;; \
+               GECKODRIVER_SHA256="8fd90b951422fbad5b56539fb344dff66eb3f986d615d8d6fde9f1f62dad610c" ;; \
         *) echo "Architecture non prise en charge: $ARCH" >&2; exit 1 ;; \
     esac && \
     wget -q "https://github.com/mozilla/geckodriver/releases/download/${GECKODRIVER_VERSION}/geckodriver-${GECKODRIVER_VERSION}-${GECKODRIVER_ARCH}.tar.gz" -O /tmp/geckodriver.tar.gz && \
