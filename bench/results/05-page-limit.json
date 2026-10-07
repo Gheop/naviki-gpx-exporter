@@ -1,0 +1,88 @@
+{
+  "scenario": "incremental",
+  "runs": 20,
+  "env": {
+    "python": "3.14.7",
+    "kernel": "7.2.8-200.fc44.x86_64",
+    "cpu": "x86_64",
+    "commit": "6a2fc82",
+    "date": "2026-10-07 12:44:33"
+  },
+  "variants": {
+    "HEAD": {
+      "wall_s": {
+        "median": 1.9993,
+        "stdev": 0.0036,
+        "cv_pct": 0.2,
+        "p95": 2.0031,
+        "min": 1.9919,
+        "max": 2.0047
+      },
+      "cpu_s": {
+        "median": 0.2106,
+        "stdev": 0.0034,
+        "cv_pct": 1.6,
+        "p95": 0.2151,
+        "min": 0.204,
+        "max": 0.2164
+      },
+      "maxrss_mb": {
+        "median": 37.6855,
+        "stdev": 0.1584,
+        "cv_pct": 0.4,
+        "p95": 37.9609,
+        "min": 37.4492,
+        "max": 38.0
+      }
+    },
+    "WORKTREE": {
+      "wall_s": {
+        "median": 0.7058,
+        "stdev": 0.0045,
+        "cv_pct": 0.6,
+        "p95": 0.7149,
+        "min": 0.698,
+        "max": 0.7153
+      },
+      "cpu_s": {
+        "median": 0.193,
+        "stdev": 0.0043,
+        "cv_pct": 2.2,
+        "p95": 0.202,
+        "min": 0.1854,
+        "max": 0.2023
+      },
+      "maxrss_mb": {
+        "median": 38.9316,
+        "stdev": 0.2483,
+        "cv_pct": 0.6,
+        "p95": 39.1406,
+        "min": 38.1094,
+        "max": 39.1758
+      }
+    }
+  },
+  "delta_vs_HEAD": {
+    "wall_s": {
+      "median_pct": -64.72,
+      "ci95_pct": [
+        -64.86,
+        -64.58
+      ]
+    },
+    "cpu_s": {
+      "median_pct": -8.74,
+      "ci95_pct": [
+        -9.95,
+        -6.87
+      ]
+    },
+    "maxrss_mb": {
+      "median_pct": 3.27,
+      "ci95_pct": [
+        2.69,
+        3.75
+      ]
+    }
+  }
+}

@@ -432,6 +432,11 @@ patterns = [
 # sans charger davantage le serveur Naviki
 DOWNLOAD_WORKERS = 4
 
+# L'API renvoie 20 trajets par défaut ; 500 ramène un compte typique en
+# 2 requêtes au lieu de 23. La boucle s'arrête sur la première page vide,
+# donc un plafond plus bas côté serveur reste géré.
+WAYS_PAGE_SIZE = 500
+
 
 def log(message):
     """print() en une seule écriture, pour ne pas mêler les lignes des threads"""
@@ -611,7 +616,8 @@ def main():
         r = s.get(
             "https://www.naviki.org/naviki/api/v6/Way/2/"
             f"findUserWaysByFilter/?filter={route_types}"
-            f"&sort=crdateDesc&offset={offset}&fullDataSet=0"
+            f"&sort=crdateDesc&offset={offset}&limit={WAYS_PAGE_SIZE}"
+            "&fullDataSet=0"
             f"&_={timestamp}"
         )
 
