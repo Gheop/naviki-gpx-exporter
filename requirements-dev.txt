@@ -8,8 +8,7 @@ pytest-mock>=3.14.0
 
 # Code quality
 flake8>=7.0.0
-black>=24.0.0
-pylint>=3.0.0
+black==26.10.0  # même version que .pre-commit-config.yaml
 
 # Security
 pip-audit>=2.7.0
