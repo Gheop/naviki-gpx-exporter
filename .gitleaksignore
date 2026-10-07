@@ -1,0 +1,6 @@
+# Alertes de l'historique git, impossibles à retirer sans réécrire l'historique.
+# Exemple de token d'une ancienne version des tests : vérifié invalide (HTTP 401)
+# le 2026-10-07.
+f706c534dbf065b05b3ef05c908da16cebf2c05b:tests/test_parsing.py:generic-api-key:102
+# Valeur d'exemple manifeste (abc123-def456-ghi789) dans la documentation
+8131c4ee535c812cb22e82ed121884b33af6bf94:DOCKER_QUICKSTART.md:generic-api-key:89

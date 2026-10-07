@@ -6,7 +6,7 @@
 You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to send all your GPX on OpenStreetMap !
 
 [![Naviki](https://img.shields.io/badge/Naviki-supported-FF6600?style=flat&logo=data:image/svg%2bxml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjE2IiBoZWlnaHQ9IjE2Ij4KPHBhdGggZD0iTTAgMCBDNS4yOCAwIDEwLjU2IDAgMTYgMCBDMTYgNS4yOCAxNiAxMC41NiAxNiAxNiBDMTAuNzIgMTYgNS40NCAxNiAwIDE2IEMwIDEwLjcyIDAgNS40NCAwIDAgWiAiIGZpbGw9IiNGQkZBRjkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDAsMCkiLz4KPHBhdGggZD0iTTAgMCBDNS4yOCAwIDEwLjU2IDAgMTYgMCBDMTYgMi4zMSAxNiA0LjYyIDE2IDcgQzEzLjM2IDYuMzQgMTAuNzIgNS42OCA4IDUgQzggNC4zNCA4IDMuNjggOCAzIEM3LjEwMjgxMjUgMy4yNzg0Mzc1IDcuMTAyODEyNSAzLjI3ODQzNzUgNi4xODc1IDMuNTYyNSBDNCA0IDQgNCAxIDMgQzAuNjcgMy42NiAwLjM0IDQuMzIgMCA1IEMwIDMuMzUgMCAxLjcgMCAwIFogIiBmaWxsPSIjRkVGREZEIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgwLDApIi8+CjxwYXRoIGQ9Ik0wIDAgQzEuOTggMCAzLjk2IDAgNiAwIEM2IDAuNjYgNiAxLjMyIDYgMiBDOC4zMSAyLjMzIDEwLjYyIDIuNjYgMTMgMyBDMTMgMy42NiAxMyA0LjMyIDEzIDUgQzEwLjAzIDQuNTA1IDEwLjAzIDQuNTA1IDcgNCBDNi42NyA1LjY1IDYuMzQgNy4zIDYgOSBDNC4zNSA5LjMzIDIuNyA5LjY2IDEgMTAgQzEgOS4zNCAxIDguNjggMSA4IEMxLjY2IDcuNjcgMi4zMiA3LjM0IDMgNyBDMyA1LjY4IDMgNC4zNiAzIDMgQzIuMDEgMi42NyAxLjAyIDIuMzQgMCAyIEMwIDEuMzQgMCAwLjY4IDAgMCBaICIgZmlsbD0iI0UwQjJBMCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMiwzKSIvPgo8cGF0aCBkPSJNMCAwIEMtMC4zMyAxLjY1IC0wLjY2IDMuMyAtMSA1IEMtMi42NSA1LjMzIC00LjMgNS42NiAtNiA2IEMtNiA0IC02IDQgLTQuMTI1IDEuODc1IEMtMiAwIC0yIDAgMCAwIFogIiBmaWxsPSIjNzY3Njc2IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg5LDcpIi8+Cjwvc3ZnPgo=)](https://www.naviki.org)
-[![Python](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Selenium](https://img.shields.io/badge/selenium-4.0+-green.svg)](https://www.selenium.dev/)
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg?logo=docker)](https://hub.docker.com)
@@ -50,7 +50,7 @@ You can use [OSM-GPX-Uploader](https://github.com/Gheop/OSM-GPX-Uploader) to sen
 ## 🔧 Prerequisites
 
 ### Standard Installation
-- **Python 3.7+**
+- **Python 3.11+**
 - **Firefox browser** and **geckodriver**: only used as a fallback if the direct login fails, and with `--visible`
 - A Naviki account with recorded routes
 
@@ -316,7 +316,7 @@ python naviki-gpx-exporter.py \
 
 #### Example 4: Using stored token
 ```bash
-# Get your token once (lasts for session)
+# Get your token once (valid until Naviki expires it)
 python naviki-gpx-exporter.py --username MyUsername --password 'pass' --output /tmp
 
 # Reuse token for multiple runs
@@ -817,6 +817,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 | Version | Date       | Changes                                                              |
 |---------|------------|----------------------------------------------------------------------|
+| 1.1.2   | 2026-10-07 | Require Python 3.11+, drop beautifulsoup4 from install, fix token wording |
 | 1.1.1   | 2026-10-07 | Document credentials from environment, fix compose, cron and defaults |
 | 1.1.0   | 2026-10-07 | Add exit codes section                                              |
 | 1.0.1   | 2026-10-07 | Document HTTP login, make Firefox optional, update sync timings      |

@@ -385,7 +385,7 @@ def parse_arguments():
         epilog="""
 Exemples:
   %(prog)s --username MonLogin --password monmdp
-  %(prog)s --token 14dcc0f4-d964-396c-a19e-3cc42e36d372
+  %(prog)s --token VOTRE-TOKEN-OAUTH
   %(prog)s --username MonLogin --password monmdp --output ~/mes_traces
   %(prog)s --username MonLogin --password monmdp --headless
   %(prog)s  # Utilise les identifiants sauvegardés dans .env
