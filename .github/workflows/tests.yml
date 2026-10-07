@@ -134,10 +134,7 @@ jobs:
     - name: Test help command
       run: |
         python naviki-gpx-exporter.py --help
-    
-    - name: Test with invalid token (should fail gracefully)
-      run: |
-        python naviki-gpx-exporter.py --token invalid-token-test --output /tmp || echo "Expected failure"
+
 
   build-badge:
     name: Update Badge
