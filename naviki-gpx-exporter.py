@@ -206,11 +206,14 @@ def get_oauth_token_with_selenium(username, password, headless=True):
         # et le token dans localStorage
         print("\n⏳ Étape 4: Attente du token dans localStorage...")
 
-        max_attempts = 20  # 20 secondes max
+        # Le token arrive ~0,4 s après la soumission : un pas d'1 s en
+        # faisait perdre ~0,6 à chaque login
+        poll_interval = 0.1
+        max_attempts = int(20 / poll_interval)  # 20 secondes max
         token = None
 
         for attempt in range(max_attempts):
-            time.sleep(1)
+            time.sleep(poll_interval)
 
             # Essayer de récupérer le token depuis localStorage
             try:
@@ -238,8 +241,8 @@ def get_oauth_token_with_selenium(username, password, headless=True):
             except Exception:
                 pass
 
-            if attempt % 5 == 0 and attempt > 0:
-                print(f"   ... tentative {attempt}/{max_attempts}")
+            if attempt % 50 == 0 and attempt > 0:
+                print(f"   ... {attempt * poll_interval:.0f} s / 20 s")
 
         if not token:
             print("\n❌ Timeout: le token n'est pas apparu dans " "localStorage")
