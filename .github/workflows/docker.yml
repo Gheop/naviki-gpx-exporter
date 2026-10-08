@@ -36,8 +36,11 @@ jobs:
           push: false
           load: true
           tags: ${{ env.IMAGE_NAME }}:test
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Un scope par job : avec le scope commun par défaut, ce build
+          # amd64 seul remplaçait le cache multi-arch de la publication et
+          # les couches arm64 n'étaient jamais réutilisées (~120 s perdues)
+          cache-from: type=gha,scope=scan
+          cache-to: type=gha,mode=max,scope=scan
           platforms: linux/amd64
 
       - name: Test Docker image
@@ -115,8 +118,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=publish
+          cache-to: type=gha,mode=max,scope=publish
           platforms: linux/amd64,linux/arm64
 
       - name: Image digest
