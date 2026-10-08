@@ -2,7 +2,7 @@
 Tests du téléchargement parallèle : mêmes résultats que l'ancien mode séquentiel
 """
 
-import time
+import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -111,11 +111,17 @@ def test_ctrl_c_cancels_queued_downloads(tmp_path):
         KeyboardInterrupt,
     ]
 
-    def slow_download(*args, **kwargs):
-        time.sleep(0.2)
+    # Les téléchargements démarrés restent bloqués jusqu'à release : ils sont
+    # forcément « en cours » au moment du Ctrl-C, sans attente fixe
+    release = threading.Event()
+    finished = threading.Semaphore(0)
+
+    def blocked_download(*args, **kwargs):
+        release.wait(timeout=5)
+        finished.release()
         return MagicMock(text="<?xml ok")
 
-    session.post.side_effect = slow_download
+    session.post.side_effect = blocked_download
     argv = ["prog", "--token", "tok", "--output", str(tmp_path / "traces")]
     with (
         patch("sys.argv", argv),
@@ -125,8 +131,15 @@ def test_ctrl_c_cancels_queued_downloads(tmp_path):
         naviki_exporter.main()
 
     assert exit_info.value.code == 130
-    time.sleep(0.5)  # laisse finir les téléchargements déjà démarrés
-    assert session.post.call_count <= naviki_exporter.DOWNLOAD_WORKERS
+    started = session.post.call_count
+    assert started <= naviki_exporter.DOWNLOAD_WORKERS
+
+    release.set()
+    for _ in range(started):
+        assert finished.acquire(timeout=5)
+    # La file a été annulée : aucun autre téléchargement ne démarre ensuite
+    assert not finished.acquire(timeout=0.1)
+    assert session.post.call_count == started
 
 
 def test_interrupted_write_leaves_no_gpx(tmp_path):
