@@ -10,6 +10,12 @@ on:
 permissions:
   contents: read
 
+# Un nouveau push sur une PR annule le run en cours ; sur main et les tags,
+# aucun run n'est interrompu (pas de publication coupée en route)
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lint:
     name: Linting & Code Quality
