@@ -51,13 +51,14 @@ shell: ## Ouvre un shell dans le container
 		--entrypoint /bin/bash \
 		$(IMAGE_NAME):latest
 
+# Image non root : dépendances de test installées avec --user
 test: ## Lance les tests dans Docker
 	docker run --rm \
-		-v $(PWD)/tests:/app/tests \
-		-v $(PWD)/requirements-dev.txt:/app/requirements-dev.txt \
+		-v $(PWD)/tests:/app/tests:ro,z \
+		-v $(PWD)/requirements-test.txt:/app/requirements-test.txt:ro,z \
 		--entrypoint /bin/bash \
 		$(IMAGE_NAME):latest \
-		-c "pip install -r requirements-dev.txt && pytest tests/ -v"
+		-c "pip install --user -q -r requirements-test.txt && python -m pytest tests/ -q -p no:cacheprovider"
 
 security-scan: ## Scan de sécurité avec Trivy
 	@if command -v trivy &> /dev/null; then \

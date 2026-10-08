@@ -1,6 +1,9 @@
 # Mises à jour hebdomadaires, regroupées par écosystème : une PR par semaine
 # au plus pour chacun, validée par la CI (tests, pip-audit, build et scan
 # Trivy de l'image) avant toute fusion.
+# cooldown : une version n'est proposée qu'après 7 jours, le temps qu'une
+# publication compromise soit repérée et retirée. Les mises à jour de
+# sécurité ne sont pas concernées et restent immédiates.
 version: 2
 updates:
   # requirements.txt (bornes) et requirements-lock.in -> requirements-lock.txt,
@@ -9,6 +12,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       python:
         patterns: ["*"]
@@ -18,6 +23,8 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       actions:
         patterns: ["*"]
@@ -27,3 +34,5 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
