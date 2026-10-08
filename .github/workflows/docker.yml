@@ -139,7 +139,11 @@ jobs:
           cache-to: type=gha,mode=max,scope=publish
           platforms: linux/amd64,linux/arm64
 
+      # Valeurs passées par env : jamais interpolées dans le script shell
       - name: Image digest
+        env:
+          DIGEST: ${{ steps.docker_build.outputs.digest }}
+          TAGS: ${{ steps.meta.outputs.tags }}
         run: |
-          echo "Image digest: ${{ steps.docker_build.outputs.digest }}"
-          echo "Tags: ${{ steps.meta.outputs.tags }}"
+          echo "Image digest: $DIGEST"
+          echo "Tags: $TAGS"
