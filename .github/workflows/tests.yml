@@ -135,12 +135,16 @@ jobs:
         pip-audit -r requirements.txt --strict --desc
         pip-audit -r requirements-lock.txt --require-hashes --strict --desc
 
-  # Build et scan sans attendre les tests : ils ne publient rien
+  # Build et scan sans attendre les tests : ils ne publient rien.
+  # GitHub exige que l'appel accorde les permissions de tous les jobs de
+  # docker.yml, même sautés ; chaque job y restreint ensuite son propre
+  # token (le scan Trivy n'a jamais packages: write).
   docker-scan:
     name: Docker scan
     uses: ./.github/workflows/docker.yml
     permissions:
       contents: read
+      packages: write
       security-events: write
 
   docker-publish:
@@ -153,3 +157,4 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
