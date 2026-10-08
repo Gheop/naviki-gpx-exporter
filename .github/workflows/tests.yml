@@ -131,16 +131,6 @@ jobs:
         pip-audit -r requirements.txt --strict --desc
         pip-audit -r requirements-lock.txt --require-hashes --strict --desc
 
-  build-badge:
-    name: Update Badge
-    runs-on: ubuntu-latest
-    needs: [lint, test, security]
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Update badge
-      run: echo "Tests passed ✅"
-
   # Build et scan sans attendre les tests : ils ne publient rien
   docker-scan:
     name: Docker scan
