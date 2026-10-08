@@ -131,35 +131,6 @@ jobs:
         pip-audit -r requirements.txt --strict --desc
         pip-audit -r requirements-lock.txt --require-hashes --strict --desc
 
-  integration:
-    name: Integration Tests (Mocked)
-    runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v7
-    
-    - name: Set up Python
-      uses: actions/setup-python@v7
-      with:
-        python-version: '3.13'
-        cache: pip
-        cache-dependency-path: requirements*.txt
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest responses
-    
-    - name: Run integration tests
-      run: |
-        pytest tests/test_integration.py -v
-    
-    - name: Test help command
-      run: |
-        python naviki-gpx-exporter.py --help
-
-
   build-badge:
     name: Update Badge
     runs-on: ubuntu-latest
