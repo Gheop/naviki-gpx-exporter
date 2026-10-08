@@ -1,11 +1,26 @@
 name: Tests
 
+# Rien de ce qui est ignoré ici n'entre dans l'image ni dans les tests.
+# GitHub n'applique pas ces filtres aux tags : une release est toujours
+# testée et publiée.
 on:
   push:
     branches: [ main, develop ]
     tags: [ 'v*' ]
+    paths-ignore:
+      - '**.md'
+      - 'bench/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.env.example'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'bench/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.env.example'
 
 permissions:
   contents: read
