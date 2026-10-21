@@ -5,7 +5,7 @@
 
 # Code quality
 flake8>=7.4.1
-black==26.10.0  # même version que .pre-commit-config.yaml
+black==26.10.1  # même version que .pre-commit-config.yaml
 
 # Security
 pip-audit>=2.10.1
